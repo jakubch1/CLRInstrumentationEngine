@@ -1,21 +1,26 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
-// 
+// Licensed under the MIT License.
+
+// stdafx.h : include file for standard system include files,
+// or project specific include files that are used frequently, but
+// are changed infrequently
+//
 
 #pragma once
 
 #ifdef PLATFORM_UNIX
 #include "unix.h"
 #include <ole.h>
+#include <palrt.h>
+#include <pal.h>
 #endif
 
 #include "targetver.h"
-#ifndef PLATFORM_UNIX
+
+#define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
+
 #include <windows.h>
-#endif
 #include "string.h"
-//#include <vsassert.h>
-
-
 #include <errorrep.h>       // for pfn_REPORTFAULT
 #include <eh.h>
 
@@ -39,27 +44,63 @@ using namespace ATL;
 #include <strsafe.h>
 #include <cor.h>
 #include <corprof.h>
-#include "CorHeaders.h"
 #include <sal.h>
 
-#include "Macros.h"
+#ifndef PLATFORM_UNIX
+#include <msxml6.h>
+#include <Pathcch.h>
+#else
+#include <libxml/parser.h>
+#include <libxml/tree.h>
+#endif
 
+
+#ifdef PLATFORM_UNIX
+#include <string>
+#endif
+
+#ifdef PLATFORM_UNIX
+// pal.h defines these, but they aren't picked up for our build because std_c++ compatibility is defined
+// in CMakeFile.txt
+#define PAL_wcsnlen_s(a, b) (a != nullptr) ? PAL_wcsnlen(a, b) : 0
+#define wcsstr        PAL_wcsstr
+#define wcslen        PAL_wcslen
+#define wcsnlen_s     PAL_wcsnlen_s
+#endif
+
+#include <queue>
 #include <vector>
 #include <memory>
 #include <unordered_map>
 
-#include "CriticalSectionHolder.h"
+#ifdef PLATFORM_UNIX
+// pal.h defines these, but they aren't picked up for our build because std_c++ compatibility is defined
+// in CMakeFile.txt
+#define fclose        PAL_fclose
+#define fflush        PAL_fflush
+#define fprintf       PAL_fprintf
+#define fwprintf      PAL_fwprintf
+#endif
 
-using namespace std;
-
-#include "refcount.h"
-#include "ImplQueryInterface.h"
-#include "InstrumentationEngine.h"
-
-#ifndef IfFailRet
-#define IfFailRet(EXPR) \
-do { if (FAILED(hr = (EXPR))) { ATLASSERT(!L"IfFailRet(" L#EXPR L") failed"); return hr; } } while (false)
+#include <time.h>
+#include <iomanip>
+#include <wchar.h>
+#ifdef PLATFORM_UNIX
+#include <ctime>
 #endif
 
 #include "Logging.h"
-#include "tstring.h"
+#include "ImplQueryInterface.h"
+#include "refcount.h"
+#include "SharedArray.h"
+
+#include "../Common.Lib/tstring.h"
+#include "../Common.Lib/Macros.h"
+#include "../Common.Lib/CriticalSectionHolder.h"
+#include "../Common.Lib/InitOnce.h"
+#include "../Common.Lib/Singleton.h"
+
+#include "../Common.Lib/banned.h"
+
+using namespace std;
+using namespace MicrosoftInstrumentationEngine;
