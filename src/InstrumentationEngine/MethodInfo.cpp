@@ -1,5 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
-// 
+// Licensed under the MIT License.
 
 #include "stdafx.h"
 #include "MethodInfo.h"
@@ -13,19 +13,15 @@
 #include "SingleRetDefaultInstrumentation.h"
 #include "Util.h"
 
-//static
-std::unordered_map<FunctionID, CComPtr<MicrosoftInstrumentationEngine::CMethodInfo>> MicrosoftInstrumentationEngine::CMethodInfo::s_methodInfos;
-
-bool MicrosoftInstrumentationEngine::CMethodInfo::s_bIsDumpingMethod = false;
-
-
 MicrosoftInstrumentationEngine::CMethodInfo::CMethodInfo(
+    _In_ CProfilerManager* pProfilerManager,
     _In_ FunctionID functionId,
     _In_ mdToken functionToken,
     _In_ ClassID classId,
     _In_ CModuleInfo* pModuleInfo,
     _In_opt_ ICorProfilerFunctionControl* pFunctionControl
     ) :
+    m_pProfilerManager(pProfilerManager),
     m_bIsStandaloneMethodInfo(false),
     m_functionId(functionId),
     m_tkFunction(functionToken),
@@ -90,12 +86,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::Initialize(_In_ bool bAddTo
     // During a rejit, the function id will not be valid
     if (bAddToMethodInfoMap)
     {
-        if (m_functionId == 0)
-        {
-            CLogging::LogError(_T("CMethodInfo::Initialize - cannot add to method info map without a function id"));
-            return E_FAIL;
-        }
-        s_methodInfos.insert({ m_functionId, this });
+        IfFailRet(m_pProfilerManager->AddMethodInfoToMap(m_functionId, this));
     }
 
     if (isRejit)
@@ -127,34 +118,11 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::Cleanup()
     {
         m_pModuleInfo->ReleaseMethodInfo(m_functionId);
 
-        s_methodInfos.erase(m_functionId);
+        m_pProfilerManager->RemoveMethodInfoFromMap(m_functionId);
     }
 
     // Don't touch the this pointer after this point.
 
-    return S_OK;
-}
-
-//static
-HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetMethodInfoById(_In_ FunctionID functionId, _In_ CMethodInfo** ppMethodInfo)
-{
-    HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::GetMethodById"));
-    IfNullRetPointer(ppMethodInfo);
-    *ppMethodInfo = NULL;
-
-    CComPtr<CMethodInfo> pMethodInfo = s_methodInfos[functionId];
-    if (pMethodInfo != NULL)
-    {
-        *ppMethodInfo = pMethodInfo.Detach();
-    }
-    else
-    {
-        CLogging::LogMessage(_T("CMethodInfo::GetMethodById - No method info found"));
-        return E_FAIL;
-    }
-
-    CLogging::LogMessage(_T("End CMethodInfo::GetMethodById"));
     return S_OK;
 }
 
@@ -171,7 +139,6 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetModuleInfo(_Out_ IModule
     CLogging::LogMessage(_T("End CMethodInfo::GetModuleInfo"));
     return hr;
 }
-
 
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetName(_Out_ BSTR* pbstrName)
 {
@@ -246,14 +213,17 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::InitializeFullName()
     if (m_pDeclaringType)
     {
         CComBSTR declaringTypeName;
-        if (SUCCEEDED(m_pDeclaringType->GetName(&declaringTypeName)) && declaringTypeName.Length() > 0)
+        if (SUCCEEDED(m_pDeclaringType->GetName(&declaringTypeName)) &&
+            declaringTypeName != nullptr &&
+            declaringTypeName.Length() > 0)
         {
             nameBuilder << (LPWSTR)declaringTypeName << _T(".");
         }
     }
-    nameBuilder << (LPWSTR)m_bstrMethodName;
-    m_bstrMethodFullName = nameBuilder.str().c_str();
 
+    nameBuilder << (LPWSTR)m_bstrMethodName;
+
+    m_bstrMethodFullName = nameBuilder.str().c_str();
     return S_OK;
 }
 
@@ -339,7 +309,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::InitializeCorAttributes(_In
         IfFailRet(pMetaDataImport->GetMethodProps(m_tkFunction, nullptr, nullptr, 0, &cbMethodName, nullptr, nullptr, nullptr, nullptr, nullptr));
         std::vector<WCHAR> nameBuilder(cbMethodName);
         IfFailRet(pMetaDataImport->GetMethodProps(tkFunction, &m_tkTypeDef, nameBuilder.data(), cbMethodName, &cbMethodName, (DWORD *)&m_methodAttr, (PCCOR_SIGNATURE*)&m_pSig, &m_cbSigBlob, &m_rva, (DWORD *)&m_implFlags));
-        m_bstrMethodName = nameBuilder.data();
+        m_bstrMethodName = nameBuilder.data(); // may be null
     }
     else if (TypeFromToken(m_tkFunction) == mdtMemberRef)
     {
@@ -347,7 +317,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::InitializeCorAttributes(_In
         IfFailRet(pMetaDataImport->GetMemberRefProps(m_tkFunction, nullptr, nullptr, 0, &cbMethodName, nullptr, nullptr));
         std::vector<WCHAR> nameBuilder(cbMethodName);
         IfFailRet(pMetaDataImport->GetMemberRefProps(tkFunction, &m_tkTypeDef, nameBuilder.data(), cbMethodName, &cbMethodName, (PCCOR_SIGNATURE*)&m_pSig, &m_cbSigBlob));
-        m_bstrMethodName = nameBuilder.data();
+        m_bstrMethodName = nameBuilder.data(); // may be null
     }
     else
     {
@@ -355,6 +325,11 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::InitializeCorAttributes(_In
         IfFailRet(pMetaDataImport->GetMethodSpecProps(tkFunction, &tkMethodDef, nullptr, nullptr));
         // Get the method def name
         IfFailRet(InitializeCorAttributes(tkMethodDef));
+    }
+
+    if (m_bstrMethodName == nullptr)
+    {
+        m_bstrMethodName = _T("");
     }
 
     m_bCorAttributesInitialized = true;
@@ -462,13 +437,13 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::CreateILFunctionBody()
     // copy the function body
     if  (cbNewMethodSizeWithoutHeader > 0)
     {
-        memcpy((BYTE*)pNewMethod + FAT_HEADER_SIZE, m_pILStream, cbNewMethodSizeWithoutHeader);
+        IfFailRetErrno(memcpy_s((BYTE*)pNewMethod + FAT_HEADER_SIZE, cbNewMethodSizeWithoutHeader, m_pILStream, cbNewMethodSizeWithoutHeader));
     }
 
     // add SEH sections
     if  (pSectEh)
     {
-        memcpy((BYTE*)pNewMethod + FAT_HEADER_SIZE + cbNewMethodSizeWithoutHeader + nNewDelta, pSectEh, cbSehExtra);
+        IfFailRetErrno(memcpy_s((BYTE*)pNewMethod + FAT_HEADER_SIZE + cbNewMethodSizeWithoutHeader + nNewDelta, cbSehExtra, pSectEh, cbSehExtra));
     }
 
 
@@ -520,11 +495,8 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::InitializeHeader(
         *pcbMethodSize = 0;
     }
 
-    CComPtr<CProfilerManager> pProfilerManager;
-    IfFailRet(CProfilerManager::GetProfilerManagerInstance(&pProfilerManager));
-
     CComPtr<ICorProfilerInfo> pCorProfilerInfo;
-    IfFailRet(pProfilerManager->GetRealCorProfilerInfo(&pCorProfilerInfo));
+    IfFailRet(m_pProfilerManager->GetRealCorProfilerInfo(&pCorProfilerInfo));
 
     IMAGE_COR_ILMETHOD* pMethodHeader = nullptr;
     ULONG cbMethodSize = 0;
@@ -1231,11 +1203,8 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::InitializeGenericParameters
     }
     else if (m_functionId)
     {
-        CComPtr<CProfilerManager> pProfilerManager;
-        IfFailRet(CProfilerManager::GetProfilerManagerInstance(&pProfilerManager));
-
         CComPtr<ICorProfilerInfo> pCorProfilerInfo;
-        IfFailRet(pProfilerManager->GetRealCorProfilerInfo(&pCorProfilerInfo));
+        IfFailRet(m_pProfilerManager->GetRealCorProfilerInfo(&pCorProfilerInfo));
 
         CComPtr<ICorProfilerInfo2> pCorProfilerInfo2;
         IfFailRet(pCorProfilerInfo->QueryInterface(&pCorProfilerInfo2));
@@ -1288,15 +1257,13 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::InitializeGenericParameters
 
 // Called by the profiler info wrapper when a raw callback requests a function's il
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIntermediateRenderedFunctionBody(
-        _Out_ LPCBYTE* ppMethodHeader,
-        _Out_ ULONG* pcbMethodSize
+        _Out_opt_ LPCBYTE* ppMethodHeader,
+        _Out_opt_ ULONG* pcbMethodSize
         )
 {
     HRESULT hr = S_OK;
 
     CLogging::LogMessage(_T("Start CMethodInfo::GetIntermediateRenderedFunctionBody"));
-    IfNullRetPointer(ppMethodHeader);
-    IfNullRetPointer(pcbMethodSize);
 
     if (!this->IsInstrumented() || m_pIntermediateRenderedMethod == nullptr)
     {
@@ -1304,8 +1271,15 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIntermediateRenderedFunc
         return E_FAIL;
     }
 
-    *ppMethodHeader = (LPCBYTE)m_pIntermediateRenderedMethod;
-    *pcbMethodSize = m_cbIntermediateRenderedMethod;
+    if (ppMethodHeader != nullptr)
+    {
+        *ppMethodHeader = (LPCBYTE)m_pIntermediateRenderedMethod;
+    }
+
+    if (pcbMethodSize != nullptr)
+    {
+        *pcbMethodSize = m_cbIntermediateRenderedMethod;
+    }
 
     CLogging::LogMessage(_T("End CMethodInfo::GetIntermediateRenderedFunctionBody"));
 
@@ -1333,7 +1307,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::SetFinalRenderedFunctionBod
 
     m_pModuleInfo->SetMethodIsTransformed(m_tkFunction, true);
     m_pFinalRenderedMethod.Allocate(cbMethodSize);
-    memcpy(m_pFinalRenderedMethod, pMethodHeader, cbMethodSize);
+    IfFailRetErrno(memcpy_s(m_pFinalRenderedMethod, cbMethodSize, pMethodHeader, cbMethodSize));
 
     m_cbFinalRenderedMethod = cbMethodSize;
 
@@ -1354,11 +1328,8 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::ApplyFinalInstrumentation()
         return E_FAIL;
     }
 
-    CComPtr<CProfilerManager> pProfilerManager;
-    IfFailRet(CProfilerManager::GetProfilerManagerInstance(&pProfilerManager));
-
     CComPtr<ICorProfilerInfo> pCorProfilerInfo;
-    IfFailRet(pProfilerManager->GetRealCorProfilerInfo(&pCorProfilerInfo));
+    IfFailRet(m_pProfilerManager->GetRealCorProfilerInfo(&pCorProfilerInfo));
 
     if (!IsRejit())
     {
@@ -1375,7 +1346,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::ApplyFinalInstrumentation()
         IfFailRet(GetFinalInstrumentation(&cbMethodBody, &pMethodBody));
 
         PVOID pFunction = pMalloc->Alloc(cbMethodBody);
-        memcpy(pFunction, pMethodBody, cbMethodBody);
+        IfFailRetErrno(memcpy_s(pFunction, cbMethodBody, pMethodBody, cbMethodBody));
 
         LogMethodInfo();
 
@@ -1423,8 +1394,8 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::ApplyFinalInstrumentation()
             DWORD corILMapmLen = (DWORD)m_pCorILMap.Count();
             corILMapmLen++;
             CSharedArray<COR_IL_MAP> pTempCorILMap(corILMapmLen);
-
-            memcpy(pTempCorILMap.Get(), m_pCorILMap.Get(), m_pCorILMap.Count() * sizeof(COR_IL_MAP));
+            size_t capacity = m_pCorILMap.Count() * sizeof(COR_IL_MAP);
+            IfFailRetErrno(memcpy_s(pTempCorILMap.Get(), capacity, m_pCorILMap.Get(), capacity));
 
             pTempCorILMap[corILMapmLen - 1].fAccurate = true;
             pTempCorILMap[corILMapmLen - 1].oldOffset = 0xfeefee;
@@ -1603,8 +1574,6 @@ void MicrosoftInstrumentationEngine::CMethodInfo::LogMethodInfo()
         return;
     }
 
-    s_bIsDumpingMethod = true;
-
     CComBSTR bstrMethodName;
     this->GetName(&bstrMethodName);
 
@@ -1707,9 +1676,9 @@ void MicrosoftInstrumentationEngine::CMethodInfo::LogMethodInfo()
 
     DWORD maxStack;
     this->GetMaxStack(&maxStack);
-	
+
     CLogging::LogDumpMessage(_T("<?xml version=\"1.0\"?>\r\n"));
-	CLogging::LogDumpMessage(_T("[TestIgnore]<Pid>%5d</Pid>\r\n"), GetCurrentProcessId());
+    CLogging::LogDumpMessage(_T("[TestIgnore]<Pid>%5d</Pid>\r\n"), GetCurrentProcessId());
     CLogging::LogDumpMessage(_T("<InstrumentedMethod>\r\n"));
     CLogging::LogDumpMessage(_T("    <Name>%s</Name>\r\n"), bstrMethodName.m_str);
     CLogging::LogDumpMessage(_T("    <FullName>%s</FullName>\r\n"), bstrMethodFullName.m_str);
@@ -1756,8 +1725,6 @@ void MicrosoftInstrumentationEngine::CMethodInfo::LogMethodInfo()
     }
 
     CLogging::LogDumpMessage(_T("</InstrumentedMethod>\r\n"));
-
-    s_bIsDumpingMethod = false;
 }
 
 
@@ -1986,8 +1953,8 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::MergeILInstrumentedCodeMap(
     else
     {
         m_pCorILMap = CSharedArray<COR_IL_MAP>(cILMapEntries);
-
-        memcpy(m_pCorILMap.Get(), rgILMapEntries, cILMapEntries * sizeof(COR_IL_MAP));
+        size_t capacity = cILMapEntries * sizeof(COR_IL_MAP);
+        IfFailRetErrno(memcpy_s(m_pCorILMap.Get(), capacity, rgILMapEntries, capacity));
     }
 
     // Save the map with the module info so that it can be retrieved later by the JIT callbacks.
@@ -2049,7 +2016,8 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetInstrumentationResults(
     *ppExceptionSection = pExceptionSection.Detach();
 
     *ppCorILMap = new COR_IL_MAP[m_pCorILMap.Count()];
-    memcpy(*ppCorILMap, m_pCorILMap.Get(), m_pCorILMap.Count() * sizeof(COR_IL_MAP));
+    size_t capacity = m_pCorILMap.Count() * sizeof(COR_IL_MAP);
+    IfFailRetErrno(memcpy_s(*ppCorILMap, capacity, m_pCorILMap.Get(), capacity));
     *dwCorILMapmLen = (DWORD)m_pCorILMap.Count();
 
     return hr;

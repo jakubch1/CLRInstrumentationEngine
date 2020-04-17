@@ -1,7 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
-// 
+// Licensed under the MIT License.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -31,6 +32,7 @@ namespace Microsoft.VisualStudio.ProductionDiagnostics.BuildTasks
             Log.LogMessage("Number of items to archive: {0}", Files.Length);
 
             bool success = true;
+            HashSet<string> uniqueFiles = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);
             try
             {
                 using (FileStream zipToOpen = new FileStream(OutputPath, FileMode.Create))
@@ -43,13 +45,21 @@ namespace Microsoft.VisualStudio.ProductionDiagnostics.BuildTasks
                         string type = fileItem.GetMetadata("Type");
                         if (!string.IsNullOrEmpty(destinationFolder))
                         {
-                            destinationFileName  = Path.Combine(destinationFolder, destinationFileName);
+                            destinationFileName  = Path.Combine(destinationFolder.TrimEnd('/', '\\'), destinationFileName);
                         }
+
+                        // Prevent duplicate files from getting zipped.
+                        if (uniqueFiles.Contains(destinationFileName))
+                        {
+                            continue;
+                        }
+
+                        uniqueFiles.Add(destinationFileName);
 
                         // Create directories
                         if (!string.IsNullOrEmpty(type) && type.Equals("Directory"))
                         {
-                            ZipArchiveEntry entry = archive.CreateEntry(destinationFileName.TrimEnd('/') + '/');
+                            ZipArchiveEntry entry = archive.CreateEntry(destinationFileName.TrimEnd('/', '\\') + '/');
                         }
                         else
                         {

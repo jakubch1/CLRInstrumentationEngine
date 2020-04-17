@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!-- Copyright (c) Microsoft Corporation. All rights reserved.
-      -->
+     Licensed under the MIT License. -->
 <package>
   <metadata>
     <id>$packageid$</id>
@@ -8,7 +8,7 @@
     <title>Microsoft Instrumentation Engine Headers</title>
     <authors>$authors$</authors>
     <owners>$authors$</owners>
-    <projectUrl>https://dotnet.microsoft.com</projectUrl>
+    <projectUrl>https://github.com/Microsoft/CLRInstrumentationEngine</projectUrl>
     <license type="file">$licenseFile$</license>
     <iconUrl>http://go.microsoft.com/fwlink/?LinkID=288859</iconUrl>
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
@@ -26,6 +26,6 @@
     <file src="" target="lib\portable-net4+win8\_._" />
 
     <!-- Licensing -->
-    <file src="$enlistmentroot$\$licenseFile$" target="" />
+    <file src="$enlistmentroot$\$licenseFile$*" target="" />
   </files>
 </package>

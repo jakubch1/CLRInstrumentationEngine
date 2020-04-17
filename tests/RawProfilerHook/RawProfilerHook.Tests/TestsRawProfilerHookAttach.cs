@@ -1,5 +1,5 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
-// 
+// Licensed under the MIT License.
 
 namespace RawProfilerHook.Tests
 {
@@ -29,19 +29,21 @@ namespace RawProfilerHook.Tests
         }
 
         [TestMethod]
-        [DeploymentItem("..\\" + TestEngine.InstrumentationEngineProfilerModuleName, ".")]
-        [DeploymentItem("..\\" + TestEngine.InstrumentationEngineHostModuleName, ".")]
-        [DeploymentItem("..\\" + TestEngine.InstrumentationEngineHostModuleName, ".")]
-        [DeploymentItem("..\\" + TestEngine.InstrumentationEngineHostConfigName, ".")]
-        [DeploymentItem("..\\" + TestEngine.InstrumentationEngineDefaultMethodModuleName, ".")]
-        [DeploymentItem("..\\..\\AnyCPU\\" + TestEngine.MscorlibExtensionMethodsBaseModuleName, ".")]
-        [DeploymentItem(".\\" + TestEngine.RawProfilerHookModuleName, ".")]
+        [DeploymentItem(@"..\" + TestEngine.InstrumentationEngineProfilerModuleName, ".")]
+        [DeploymentItem(@"..\" + TestEngine.InstrumentationEngineHostConfigName, ".")]
+        [DeploymentItem(@"..\" + TestEngine.InstrumentationEngineDefaultMethodModuleName, ".")]
+        [DeploymentItem(@"..\..\AnyCPU\" + TestEngine.MscorlibExtensionMethodsBaseModuleName, ".")]
+        [DeploymentItem(@".\" + TestEngine.RawProfilerHookModuleName, ".")]
         public void TestRawProfilerHookIsLoadedIfEnvVariableIsSet()
         {
             Assert.IsFalse(
                 Process.GetCurrentProcess().IsModuleLoaded("Microsoft.RawProfilerHook"),
                 "Exception extensions module is loaded");
 
+            TestEngine.IgnoreBitness = true;
+            TestEngine.ExecuteTest<TestsRawProfilerHookIsLoadedIfEnvVariableIsSet>();
+
+            TestEngine.IgnoreBitness = false;
             TestEngine.ExecuteTest<TestsRawProfilerHookIsLoadedIfEnvVariableIsSet>();
         }
 
@@ -60,20 +62,22 @@ namespace RawProfilerHook.Tests
         }
 
         [TestMethod]
-        [DeploymentItem("..\\" + TestEngine.InstrumentationEngineProfilerModuleName, ".")]
-        [DeploymentItem("..\\" + TestEngine.InstrumentationEngineHostModuleName, ".")]
-        [DeploymentItem("..\\" + TestEngine.InstrumentationEngineHostModuleName, ".")]
-        [DeploymentItem("..\\" + TestEngine.InstrumentationEngineHostConfigName, ".")]
-        [DeploymentItem("..\\" + TestEngine.InstrumentationEngineDefaultMethodModuleName, ".")]
-        [DeploymentItem("..\\..\\AnyCPU\\" + TestEngine.MscorlibExtensionMethodsBaseModuleName, ".")]
-        [DeploymentItem(".\\" + TestEngine.RawProfilerHookModuleName, ".")]
+        [DeploymentItem(@"..\" + TestEngine.InstrumentationEngineProfilerModuleName, ".")]
+        [DeploymentItem(@"..\" + TestEngine.InstrumentationEngineHostConfigName, ".")]
+        [DeploymentItem(@"..\" + TestEngine.InstrumentationEngineDefaultMethodModuleName, ".")]
+        [DeploymentItem(@"..\..\AnyCPU\" + TestEngine.MscorlibExtensionMethodsBaseModuleName, ".")]
+        [DeploymentItem(@".\" + TestEngine.RawProfilerHookModuleName, ".")]
         public void TestRawProfilerHookCallsGetAssemblyReferences()
         {
             Assert.IsFalse(
                 Process.GetCurrentProcess().IsModuleLoaded("Microsoft.RawProfilerHook"),
                 "Exception extensions module is loaded");
 
-            TestEngine.ExecuteTest<TestRawProfilerHookCallsGetAssemblyReferencesBase>();
+            TestEngine.IgnoreBitness = true;
+            TestEngine.ExecuteTest<TestsRawProfilerHookIsLoadedIfEnvVariableIsSet>();
+
+            TestEngine.IgnoreBitness = false;
+            TestEngine.ExecuteTest<TestsRawProfilerHookIsLoadedIfEnvVariableIsSet>();
         }
     }
 }

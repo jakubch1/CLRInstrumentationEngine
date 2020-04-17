@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Copyright (c) Microsoft Corporation. All rights reserved.
-      -->
+     Licensed under the MIT License. -->
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="Common.Props" Condition="$(CommonBuildPropsIncluded) == '' or $(CommonBuildPropsIncluded) != 'True'" />
-  <Import Project="$(PackagesDir)\packages\MicroBuild.Core\$(MicrobuildCoreVersion)\build\MicroBuild.Core.props" Condition="Exists('$(PackagesDir)\packages\MicroBuild.Core\$(MicrobuildCoreVersion)\build\MicroBuild.Core.props')" />
+  <Import Project="$(PackagesDir)\Microsoft.VisualStudioEng.MicroBuild.Core\$(MicroBuildCoreVersion)\build\Microsoft.VisualStudioEng.MicroBuild.Core.props" Condition="Exists('$(PackagesDir)\Microsoft.VisualStudioEng.MicroBuild.Core\$(MicroBuildCoreVersion)\build\Microsoft.VisualStudioEng.MicroBuild.Core.props')" />
 
   <PropertyGroup Condition="'$(buildtarget)'!=''">
     <Platform Condition="'$(buildtarget)'=='amd64'">x64</Platform>
@@ -48,8 +48,8 @@
     <UseOfAtl>Static</UseOfAtl>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
-    <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
+    <PlatformToolset>v142</PlatformToolset>
+    <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
 
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)'=='Release'">

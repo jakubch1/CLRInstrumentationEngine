@@ -1,5 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
-// 
+// Licensed under the MIT License.
 
 #include "stdafx.h"
 #include "TypeCreator.h"
@@ -116,11 +116,7 @@ HRESULT MicrosoftInstrumentationEngine::CTypeCreator::FromSignature(_In_ DWORD c
         {
             mdToken tokenValue;
             currentSize += CorSigUncompressToken(&currentSignature[currentSize], &tokenValue);
-            createdType.Attach(new CTokenType(m_pModuleInfo, tokenValue, sigElement));
-            if (createdType == nullptr)
-            {
-                return E_OUTOFMEMORY;
-            }
+            IfFailRet(FromToken(sigElement, tokenValue, &createdType));
         }
         break;
     case ELEMENT_TYPE_PTR:

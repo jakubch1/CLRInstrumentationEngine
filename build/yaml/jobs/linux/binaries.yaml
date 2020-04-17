@@ -1,0 +1,43 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
+
+# Job Template: Build Linux Binaries
+
+parameters:
+  SignType: None
+  IsMicroBuildInternal: false
+  MatrixStrategy: {}
+
+jobs:
+- job: Linux
+  displayName: Linux
+
+  strategy:
+    matrix:
+      ${{ insert }}: ${{ parameters.MatrixStrategy }}
+
+  pool:
+    ${{ if eq('true', parameters.IsMicroBuildInternal) }}:
+      name: DotNet-Build
+      demands:
+      - docker
+      - sh
+    ${{ if not(eq('true', parameters.IsMicroBuildInternal)) }}:
+      vmImage: ubuntu-16.04
+
+  workspace:
+    clean: outputs
+
+  steps:
+  - checkout: self
+    clean: true
+
+  - template: ../../steps/linux/binaries.yaml
+
+  - template: ../../steps/azuredevops/publishbuildartifacts.yaml
+    parameters:
+      PathToPublish: '$(Build.SourcesDirectory)/out/Linux/bin/$(Platform).$(Configuration)'
+      ArtifactName: 'binaries-linux-$(Distro)-$(Configuration)'
+
+  - ${{ if eq('true', parameters.IsMicroBuildInternal) }}:
+    - template: ../../steps/microbuild/cleanup.yaml

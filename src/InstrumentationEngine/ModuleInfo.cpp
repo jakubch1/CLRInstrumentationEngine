@@ -1,5 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
-// 
+// Licensed under the MIT License.
 
 #include "stdafx.h"
 
@@ -13,7 +13,8 @@
 #include "AssemblyInjector.h"
 #endif
 
-MicrosoftInstrumentationEngine::CModuleInfo::CModuleInfo() :
+MicrosoftInstrumentationEngine::CModuleInfo::CModuleInfo(_In_ CProfilerManager* pProfilerManager) :
+    m_pProfilerManager(pProfilerManager),
     m_moduleID(0),
     m_bIs64bit(false),
     m_bIsIlOnly(true),
@@ -534,11 +535,8 @@ HRESULT MicrosoftInstrumentationEngine::CModuleInfo::RequestRejit(_In_ mdToken m
 
     CLogging::LogMessage(_T("Begin CModuleInfo::RequestRejit"));
 
-    CComPtr<CProfilerManager> pProfilerManager;
-    CProfilerManager::GetProfilerManagerInstance(&pProfilerManager);
-
     CComPtr<ICorProfilerInfo> pRealProfilerInfo;
-    IfFailRet(pProfilerManager->GetRealCorProfilerInfo(&pRealProfilerInfo));
+    IfFailRet(m_pProfilerManager->GetRealCorProfilerInfo(&pRealProfilerInfo));
 
     CComPtr<ICorProfilerInfo4> pRealProfilerInfo4;
     IfFailRet(pRealProfilerInfo->QueryInterface(__uuidof(ICorProfilerInfo4), (void**)&pRealProfilerInfo4));
@@ -590,13 +588,10 @@ HRESULT MicrosoftInstrumentationEngine::CModuleInfo::GetModuleTypeFlags()
 {
     HRESULT hr = S_OK;
 
-    CComPtr<CProfilerManager> pProfilerManager;
-    IfFailRet(CProfilerManager::GetProfilerManagerInstance(&pProfilerManager));
-
     // A module is considered dynamic if and only if the base load address is 0
     m_bIsDynamic = m_pModuleBaseLoadAddress == 0;
 
-    if(pProfilerManager->GetAttachedClrVersion() < ClrVersion_4 )
+    if(m_pProfilerManager->GetAttachedClrVersion() < ClrVersion_4 )
     {
 #ifndef PLATFORM_UNIX
         if (m_bstrModuleName.Length() != 0)
@@ -617,7 +612,7 @@ HRESULT MicrosoftInstrumentationEngine::CModuleInfo::GetModuleTypeFlags()
     else
     {
         CComPtr<ICorProfilerInfo> pCorProfilerInfo;
-        IfFailRet(pProfilerManager->GetRealCorProfilerInfo(&pCorProfilerInfo));
+        IfFailRet(m_pProfilerManager->GetRealCorProfilerInfo(&pCorProfilerInfo));
 
         //In CLRv4, rely on GetModuleInfo2 to find out the type of the module.
         CComPtr<ICorProfilerInfo3> pCorInfo3;
@@ -912,14 +907,22 @@ HRESULT MicrosoftInstrumentationEngine::CModuleInfo::SetRejitMethodInfo(_In_ mdT
     if (pMethodInfo != nullptr)
     {
         std::unordered_map<mdMethodDef, CComPtr<CMethodInfo>>::iterator iter = m_methodInfosByToken.find(methodToken);
-
         if (iter != m_methodInfosByToken.end())
         {
             CLogging::LogMessage(_T("CModuleInfo::SetRejitMethodInfo - method token already exists %04x. Overwriting"), methodToken);
         }
-    }
+        else
+        {
+            CLogging::LogMessage(_T("CModuleInfo::SetRejitMethodInfo - adding new method token %04x."), methodToken);
+        }
 
-    m_methodInfosByToken[methodToken] = pMethodInfo;
+        m_methodInfosByToken[methodToken] = pMethodInfo;
+    }
+    else
+    {
+        CLogging::LogMessage(_T("CModuleInfo::SetRejitMethodInfo - erasing existing method token %04x."), methodToken);
+        m_methodInfosByToken.erase(methodToken);
+    }
 
     return S_OK;
 }
@@ -957,11 +960,8 @@ HRESULT MicrosoftInstrumentationEngine::CModuleInfo::GetMethodInfoById(_In_ Func
     IfNullRetPointer(ppMethodInfo);
     *ppMethodInfo = NULL;
 
-    CComPtr<CProfilerManager> pProfilerManager;
-    IfFailRet(CProfilerManager::GetProfilerManagerInstance(&pProfilerManager));
-
     CComPtr<ICorProfilerInfo> pCorProfilerInfo;
-    IfFailRet(pProfilerManager->GetRealCorProfilerInfo(&pCorProfilerInfo));
+    IfFailRet(m_pProfilerManager->GetRealCorProfilerInfo(&pCorProfilerInfo));
 
     ClassID classId;
     ModuleID moduleId;
@@ -970,7 +970,7 @@ HRESULT MicrosoftInstrumentationEngine::CModuleInfo::GetMethodInfoById(_In_ Func
 
     CLogging::LogMessage(_T("CProfilerManager::GetMethodInfoById - creating new method info"));
     CComPtr<CMethodInfo> pMethodInfo;
-    pMethodInfo.Attach(new CMethodInfo(functionID, methodToken, classId, this, nullptr));
+    pMethodInfo.Attach(new CMethodInfo(m_pProfilerManager, functionID, methodToken, classId, this, nullptr));
 
     IfFailRet(pMethodInfo->Initialize(false, false));
 
@@ -996,7 +996,7 @@ HRESULT MicrosoftInstrumentationEngine::CModuleInfo::GetMethodInfoByToken(_In_ m
     CLogging::LogMessage(_T("CProfilerManager::GetMethodInfoByToken - creating new method info"));
 
     CComPtr<CMethodInfo> pMethodInfo;
-    pMethodInfo.Attach(new CMethodInfo(0, methodToken, 0, this, nullptr));
+    pMethodInfo.Attach(new CMethodInfo(m_pProfilerManager, 0, methodToken, 0, this, nullptr));
 
     IfFailRet(pMethodInfo->Initialize(false, false));
 
@@ -1012,11 +1012,8 @@ HRESULT MicrosoftInstrumentationEngine::CModuleInfo::ImportModule(_In_ IUnknown*
 #ifdef _WINDOWS_
     HRESULT hr = S_OK;
 
-    CComPtr<CProfilerManager> pProfilerManager;
-    CProfilerManager::GetProfilerManagerInstance(&pProfilerManager);
-
     CComPtr<ICorProfilerInfo> pRealProfilerInfo;
-    IfFailRet(pProfilerManager->GetRealCorProfilerInfo(&pRealProfilerInfo));
+    IfFailRet(m_pProfilerManager->GetRealCorProfilerInfo(&pRealProfilerInfo));
 
     CComPtr<ICorProfilerInfo2> pRealProfilerInfo2;
     IfFailRet(pRealProfilerInfo->QueryInterface(__uuidof(ICorProfilerInfo2), reinterpret_cast<void**>(&pRealProfilerInfo2)));
@@ -1092,14 +1089,15 @@ HRESULT MicrosoftInstrumentationEngine::CModuleInfo::GetILInstrumentationMap(_In
     {
         CSharedArray<COR_IL_MAP> map = (*it).second;
 
-        *pcNeeded = map.Count();
+        // This is a safe cast since the underlying CLR APIs only use a ULONG32 anyway.
+        *pcNeeded = (ULONG32)map.Count();
         if (cMap == 0 || pMap == NULL)
         {
             return S_OK;
         }
         size_t mapCount = map.Count();
         size_t cCount = ((size_t)cMap <= mapCount) ? (size_t)cMap : mapCount;
-        memcpy(pMap, map.Get(), cCount * sizeof(COR_IL_MAP));
+        IfFailRetErrno(memcpy_s(pMap, mapCount * sizeof(COR_IL_MAP), map.Get(), cCount * sizeof(COR_IL_MAP)));
     }
 
     return S_OK;

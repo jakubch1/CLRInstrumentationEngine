@@ -1,5 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
-// 
+// Licensed under the MIT License.
 
 #include "stdafx.h"
 #include "LocalVariableCollection.h"
@@ -169,8 +169,6 @@ HRESULT MicrosoftInstrumentationEngine::CLocalVariableCollection::CommitSignatur
     }
 
     HRESULT hr;
-    CComPtr<CProfilerManager> pProfilerManager;
-    IfFailRet(CProfilerManager::GetProfilerManagerInstance(&pProfilerManager));
 
     CComPtr<ISignatureBuilder> signatureBuilder;
     IfFailRet(this->GetCorSignature(&signatureBuilder));

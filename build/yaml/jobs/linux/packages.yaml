@@ -1,0 +1,60 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
+
+# Job Template: Build Linux Packages
+
+parameters:
+  SignType: None
+  IsMicroBuildInternal: false
+  MatrixStrategy: {}
+
+jobs:
+- job: Linux_Packages
+  displayName: Linux Packages
+
+  strategy:
+    matrix:
+      ${{ insert }}: ${{ parameters.MatrixStrategy }}
+
+  pool:
+    ${{ if eq('true', parameters.IsMicroBuildInternal) }}:
+      name: VSEng-MicroBuildVS2019
+      demands:
+      - msbuild
+      - vstest
+    ${{ if not(eq('true', parameters.IsMicroBuildInternal)) }}:
+      vmImage: windows-2019
+
+  workspace:
+    clean: outputs
+
+  steps:
+  - checkout: self
+    clean: true
+
+  - ${{ if eq('true', parameters.IsMicroBuildInternal) }}:
+    - template: ../../steps/microbuild/signing.yaml
+      parameters:
+        SignType: ${{ parameters.SignType }}
+
+  - template: ../../steps/linux/packages.yaml
+
+  - ${{ if eq('true', parameters.IsMicroBuildInternal) }}:
+    - template: ../../steps/microbuild/codesignverify.yaml
+      parameters:
+        SignType: ${{ parameters.SignType }}
+
+  - template: ../../steps/azuredevops/publishbuildartifacts.yaml
+    parameters:
+      PathToPublish: '$(Build.ArtifactStagingDirectory)\bin\$(Configuration)'
+      ArtifactName: 'packages-linux-$(Distro)-$(Configuration)'
+
+  - template: ../../steps/azuredevops/publishbuildartifacts.yaml
+    parameters:
+      PathToPublish: '$(Build.ArtifactStagingDirectory)\bin\$(Configuration)'
+      ArtifactName: 'packages-all'
+
+  - ${{ if eq('true', parameters.IsMicroBuildInternal) }}:
+    - template: ../../steps/microbuild/cleanup.yaml
+
+  - template: ../../steps/azuredevops/componentgovernance.yaml

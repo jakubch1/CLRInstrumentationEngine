@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!-- Copyright (c) Microsoft Corporation. All rights reserved.
-      -->
+     Licensed under the MIT License. -->
 <package>
   <metadata>
     <id>$packageid$</id>
@@ -8,7 +8,7 @@
     <title>Microsoft Instrumentation Engine</title>
     <authors>$authors$</authors>
     <owners>$authors$</owners>
-    <projectUrl>https://dotnet.microsoft.com</projectUrl>
+    <projectUrl>https://github.com/Microsoft/CLRInstrumentationEngine</projectUrl>
     <license type="file">$licenseFile$</license>
     <iconUrl>http://go.microsoft.com/fwlink/?LinkID=288859</iconUrl>
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
@@ -18,13 +18,13 @@
   <files>
     <!-- See http://docs.nuget.org/consume/support-for-native-projects -->
     <file src="$bindir$\**\*" target="content\Microsoft.InstrumentationEngine" />
-    <file src="$scriptdir$\install.ps1" target="Tools" />
+    <file src="$scriptdir$\Install.ps1" target="Tools" />
 
     <!-- Support installation on managed projects -->
     <file src="" target="lib\net40\_._" />
     <file src="" target="lib\portable-net4+win8\_._" />
 
     <!-- Licensing -->
-    <file src="$enlistmentroot$\$licenseFile$" target="" />
+    <file src="$enlistmentroot$\$licenseFile$*" target="" />
   </files>
 </package>

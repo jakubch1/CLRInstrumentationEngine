@@ -1,5 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
-// 
+// Licensed under the MIT License.
 
 #pragma once
 
@@ -55,24 +55,25 @@ using namespace ATL;
 // pal.h defines these, but they aren't picked up for our build because std_c++ compatibility is defined
 // in CMakeFile.txt
 #define wcsstr        PAL_wcsstr
+#define wcscmp        PAL_wcscmp
 #endif
-
-#include "tstring.h"
-
-#include "Macros.h"
 
 #include <vector>
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
 
-#include "CriticalSectionHolder.h"
-
-using namespace std;
-
-#include "refcount.h"
-#include "ImplQueryInterface.h"
 #include "InstrumentationEngine.h"
-#include "Logging.h"
+#include "../InstrumentationEngine.Lib/ImplQueryInterface.h"
+#include "../InstrumentationEngine.Lib/Logging.h"
+#include "../InstrumentationEngine.Lib/refcount.h"
 
 #include "resource.h"
+
+#include "../Common.Lib/tstring.h"
+#include "../Common.Lib/Macros.h"
+#include "../Common.Lib/CriticalSectionHolder.h"
+
+#include "../Common.Lib/banned.h"
+
+using namespace std;

@@ -1,0 +1,75 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
+
+# Job Template: Build All Binaries
+# Builds binaries for all platforms
+
+parameters:
+  IndexSources: false
+  SignType: None
+  Configuration: Both
+  IsMicroBuildInternal: false
+
+jobs:
+# Windows Binaries
+- template: windows/binaries.yaml
+  parameters:
+    IndexSources: ${{ parameters.IndexSources }}
+    SignType: ${{ parameters.SignType }}
+    IsMicroBuildInternal: ${{ parameters.IsMicroBuildInternal }}
+    # Filter out Tests for Signed Builds
+    ${{ if and( or( eq(parameters.Configuration, 'Both'), eq(parameters.Configuration, 'Release') ), notIn(parameters.SignType, '', 'None') )}}:
+      CopyFilters: |
+        **
+        !**\Nagler*
+        !**\*Test*
+        !**\*Test*\**
+    # Publish Symbols only for Real Signed builds
+    ${{ if and( or( eq(parameters.Configuration, 'Both'), eq(parameters.Configuration, 'Release') ), notIn(parameters.SignType, '', 'None') )}}:
+      PublishSymbols: true
+    MatrixStrategy:
+      ${{ if or( eq(parameters.Configuration, 'Both'), eq(parameters.Configuration, 'Release') )}}:
+        Release_x86:
+          Configuration: 'Release'
+          Platform: 'x86'
+        Release_x64:
+          Configuration: 'Release'
+          Platform: 'x64'
+        Release_AnyCPU:
+          Configuration: 'Release'
+          Platform: 'Any CPU'
+      ${{ if or( eq(parameters.Configuration, 'Both'), eq(parameters.Configuration, 'Debug') )}}:
+        Debug_x86:
+          Configuration: 'Debug'
+          Platform: 'x86'
+        Debug_x64:
+          Configuration: 'Debug'
+          Platform: 'x64'
+        Debug_AnyCPU:
+          Configuration: 'Debug'
+          Platform: 'Any CPU'
+
+# Linux Binaries
+- template: linux/binaries.yaml
+  parameters:
+    SignType: ${{ parameters.SignType }}
+    IsMicroBuildInternal: ${{ parameters.IsMicroBuildInternal }}
+    MatrixStrategy:
+      ${{ if or( eq(parameters.Configuration, 'Both'), eq(parameters.Configuration, 'Release') )}}:
+        Alpine_Release_x64:
+          Configuration: 'Release'
+          Platform: 'x64'
+          Distro: 'alpine'
+        Ubuntu_Release_x64:
+          Configuration: 'Release'
+          Platform: 'x64'
+          Distro: 'ubuntu'
+      ${{ if or( eq(parameters.Configuration, 'Both'), eq(parameters.Configuration, 'Debug') )}}:
+        Ubuntu_Debug_x64:
+          Configuration: 'Debug'
+          Platform: 'x64'
+          Distro: 'ubuntu'
+        Alpine_Debug_x64:
+          Configuration: 'Debug'
+          Platform: 'x64'
+          Distro: 'alpine'

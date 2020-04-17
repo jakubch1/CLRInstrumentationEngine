@@ -1,5 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
-// 
+// Licensed under the MIT License.
 
 #pragma once
 
@@ -9,6 +9,7 @@
 #include "ExceptionSection.h"
 #include "InstructionFactory.h"
 #include "LocalVariableCollection.h"
+#include "../InstrumentationEngine.Lib/SharedArray.h"
 
 using namespace ATL;
 
@@ -25,10 +26,8 @@ namespace MicrosoftInstrumentationEngine
     CMethodInfo : public IMethodInfo2, public CDataContainer
     {
     private:
-        // static map of method infos by function id. This is needed becasue some raw profiler
-        // callbacks only take a FunctionID instead of a moduleid / functionid
-        // these are cleaned up after instrumentation for the method is over.
-        static std::unordered_map <FunctionID, CComPtr<CMethodInfo>> s_methodInfos;
+        // Non-addref'd back pointer the profiler manager.
+        CProfilerManager* m_pProfilerManager;
 
         // True if this method info is not shared across calls and therefore not stored in s_methodInfos or within the containing module info
         // This ensures unrelated calls do not stomp on the lifetime of methodinfos.
@@ -144,6 +143,7 @@ namespace MicrosoftInstrumentationEngine
         }
     public:
         CMethodInfo(
+            _In_ CProfilerManager* pProfilerManager,
             _In_ FunctionID functionId,
             _In_ mdToken functionToken,
             _In_ ClassID classId,
@@ -160,15 +160,13 @@ namespace MicrosoftInstrumentationEngine
         // scenario.
         HRESULT Cleanup();
 
-        static HRESULT GetMethodInfoById(_In_ FunctionID functionId, _In_ CMethodInfo** ppMethodInfo);
-
         HRESULT ApplyIntermediateMethodInstrumentation();
 
         HRESULT CreateILFunctionBody();
 
         HRESULT GetIntermediateRenderedFunctionBody(
-            _Out_ LPCBYTE* ppMethodHeader,
-            _Out_ ULONG* pcbMethodSize
+            _Out_opt_ LPCBYTE* ppMethodHeader,
+            _Out_opt_ ULONG* pcbMethodSize
             );
 
         // Called after the raw profiler hook has instrumented the function. Sets the IL transformation
@@ -196,8 +194,6 @@ namespace MicrosoftInstrumentationEngine
             _Out_ COR_IL_MAP** ppCorILMap,
             _Out_ DWORD* dwCorILMapmLen
             );
-
-        static bool s_bIsDumpingMethod;
 
         void LogMethodInfo();
         void LogInstructionGraph(_In_ CInstructionGraph* pInstructionGraph);

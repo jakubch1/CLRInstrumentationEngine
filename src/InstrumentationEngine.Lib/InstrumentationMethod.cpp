@@ -1,28 +1,71 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
-// 
+// Licensed under the MIT License.
 
 #include "stdafx.h"
-#include "InstrumentationEngine.h"
+#include "../InstrumentationEngine.Api/InstrumentationEngine.h"
 #include "InstrumentationMethod.h"
+#include "InstrumentationMethodAttachContext.h"
 #ifndef PLATFORM_UNIX
 #include "SignatureValidator.h"
 #endif
 
 
 MicrosoftInstrumentationEngine::CInstrumentationMethod::CInstrumentationMethod(
-    BSTR bstrModuleFolder,
-    BSTR bstrName,
-    BSTR bstrDescription,
-    BSTR bstrModule,
-    GUID& guidClassId,
-    DWORD dwPriority
+    _In_ BSTR bstrModuleFolder,
+    _In_ BSTR bstrName,
+    _In_ BSTR bstrDescription,
+    _In_ BSTR bstrModule,
+    _In_ GUID& guidClassId,
+    _In_ DWORD dwPriority
     ) : m_hmod(NULL), m_bstrName(bstrName), m_bstrModuleFolder(bstrModuleFolder), m_bstrModule(bstrModule), m_bstrDescription(bstrDescription), m_guidClassId(guidClassId), m_dwPriority(dwPriority)
 {
 
 }
 
+HRESULT MicrosoftInstrumentationEngine::CInstrumentationMethod::Initialize(
+    _In_ IProfilerManager* pProfilerManager,
+    _In_ bool validateCodeSignature
+    )
+{
+    HRESULT hr = S_OK;
 
-HRESULT MicrosoftInstrumentationEngine::CInstrumentationMethod::Initialize(_In_ IProfilerManager* pProfilerManager, bool validateCodeSignature)
+    IfFailRet(InitializeCore(validateCodeSignature));
+
+    hr = m_pInstrumentationMethod->Initialize(pProfilerManager);
+    if (FAILED(hr))
+    {
+        CLogging::LogError(_T("CInstrumentationMethod::Initialize - failed to initialize instrumentation method PID: %u hr: %x name: %s"), GetCurrentProcessId(), hr, m_bstrName.m_str);
+        return hr;
+    }
+
+    return S_OK;
+}
+
+HRESULT MicrosoftInstrumentationEngine::CInstrumentationMethod::InitializeForAttach(
+    _In_ IProfilerManager* pProfilerManager,
+    _In_ IEnumInstrumentationMethodSettings* pSettingsEnum,
+    _In_ bool validateCodeSignature
+    )
+{
+    HRESULT hr = S_OK;
+
+    IfFailRet(InitializeCore(validateCodeSignature));
+
+    CComQIPtr<IInstrumentationMethodAttach> pInstrumentationMethodAttach(m_pInstrumentationMethod);
+    IfNullRet(pInstrumentationMethodAttach);
+
+    CComPtr<IInstrumentationMethodAttachContext> pContext;
+    pContext.Attach(new (nothrow) CInstrumentationMethodAttachContext(pSettingsEnum));
+    IfFalseRet(nullptr != pContext, E_OUTOFMEMORY);
+
+    IfFailRet(pInstrumentationMethodAttach->InitializeForAttach(pProfilerManager, pContext));
+
+    return S_OK;
+}
+
+HRESULT MicrosoftInstrumentationEngine::CInstrumentationMethod::InitializeCore(
+    _In_ bool validateCodeSignature
+    )
 {
     HRESULT hr = S_OK;
 
@@ -56,7 +99,7 @@ HRESULT MicrosoftInstrumentationEngine::CInstrumentationMethod::Initialize(_In_ 
         CSignatureValidator validator;
         if (FALSE == validator.VerifyEmbeddedSignature(wszModuleFullPath))
         {
-            CLogging::LogError(_T("CInstrumentationMethod::Initialize - Instrumentaiton Method should be code signed"));
+            CLogging::LogError(_T("CInstrumentationMethod::Initialize - Instrumentation Method should be code signed"));
             FreeLibrary(m_hmod);
             return E_FAIL;
         }
@@ -90,12 +133,17 @@ HRESULT MicrosoftInstrumentationEngine::CInstrumentationMethod::Initialize(_In_ 
         return hr;
     }
 
-    hr = m_pInstrumentationMethod->Initialize(pProfilerManager);
-    if (FAILED(hr))
-    {
-        CLogging::LogError(_T("CInstrumentationMethod::Initialize - failed to initialize instrumentation method PID: %u hr: %x name: %s"), GetCurrentProcessId(), hr, m_bstrName.m_str);
-        return hr;
-    }
+    return S_OK;
+}
+
+HRESULT MicrosoftInstrumentationEngine::CInstrumentationMethod::AttachComplete()
+{
+    HRESULT hr = S_OK;
+
+    CComQIPtr<IInstrumentationMethodAttach> pInstrumentationMethodAttach(m_pInstrumentationMethod);
+    IfNullRet(pInstrumentationMethodAttach);
+
+    IfFailRet(pInstrumentationMethodAttach->AttachComplete());
 
     return S_OK;
 }

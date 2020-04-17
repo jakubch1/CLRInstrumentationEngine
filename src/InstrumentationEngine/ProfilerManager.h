@@ -1,12 +1,18 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
-// 
+// Licensed under the MIT License.
 
 #pragma once
 
+#include "stdafx.h"
 #include "InstrumentationMethod.h"
 #include "AppDomainCollection.h"
 #include "ClrVersion.h"
+#include "ConfigurationSource.h"
 #include "MethodInfo.h"
+#ifndef PLATFORM_UNIX
+#include "../Common.Lib/ModuleHandle.h"
+#endif
+#include <XmlDocWrapper.h>
 
 using namespace ATL;
 
@@ -16,6 +22,19 @@ namespace MicrosoftInstrumentationEngine
 
     const GUID CLSID_CProfilerManager = { 0x324F817A, 0x7420, 0x4E6D,{ 0xB3, 0xC1, 0x14, 0x3f, 0xBE, 0xD6, 0xD8, 0x55 } };
 
+    // This abstract class should be updated with new IProfilerManager interfaces.
+    // Both CProfilerManager and CProfilerManagerForInstrumentationMethod inherit this class.
+    class IProfilerManagerContract :
+        public IProfilerManager,
+        public IProfilerManager2,
+        public IProfilerManager3,
+        public IProfilerManager4,
+        public IProfilerManager5,
+        public IProfilerManagerLogging
+    {
+
+    };
+
     class __declspec(uuid("324F817A-7420-4E6D-B3C1-143FBED6D855"))
     CProfilerManager :
                      public ATL::CComObjectRootEx<ATL::CComMultiThreadModel>,
@@ -24,20 +43,10 @@ namespace MicrosoftInstrumentationEngine
 #else
                      public ATL::CComCoClass<CProfilerManager, &CLSID_CProfilerManager>,
 #endif
-                     public IProfilerManager,
-                     public IProfilerManager2,
-                     public IProfilerManager3,
-                     public IProfilerManagerLogging,
+                     public IProfilerManagerContract,
                      public ICorProfilerCallback7
     {
     private:
-        static const LoggingFlags LoggingFlags_All = (LoggingFlags)(LoggingFlags_Errors | LoggingFlags_Trace | LoggingFlags_InstrumentationResults);
-
-    private:
-        // currently, the profiler manager does not support in-proc sxs.
-        // If this is non-null during the initialize call, the profiler attach is rejected.
-        static CProfilerManager* s_profilerManagerInstance;
-
         // Instrumentation methods can disabling profiling on this process before it starts by calling this during initialize.
         bool m_bProfilingDisabled;
 
@@ -61,26 +70,17 @@ namespace MicrosoftInstrumentationEngine
         CComPtr<IMarshal> m_pFTM;
 #endif
 
-        // Path to the profiler host dll
-        tstring m_profilerHostDllPath;
-
-        // Guid of the profiler host object to be created within the host dll
-        GUID m_guidProfilerHost;
-
-        // Pointer to the single profiler host instance
-        CComPtr<IProfilerManagerHost> m_profilerManagerHost;
-
-        // hmodule for the profiler host dll
-        HMODULE m_profilerHostModule;
-
         // Pointer to the real ICorProfilerInfo from the clr
         CComPtr<ICorProfilerInfo> m_pRealProfilerInfo;
 
         // The wrapped ICorProfilerInfo implementation that allows for instrumentation method cooperation
         CComPtr<ICorProfilerInfo> m_pWrappedProfilerInfo;
 
-        // list of configuration file paths
-        vector<ATL::CComBSTR> m_configFilePaths;
+        // list of instrumentation method configuration sources
+        vector<CComPtr<CConfigurationSource>> m_configSources;
+
+        // The configuration xml for profiler attach.
+        tstring m_tstrConfigXml;
 
         // list of loaded instrumentation method guids
         std::vector<GUID> m_instrumentationMethodGuids;
@@ -111,6 +111,11 @@ namespace MicrosoftInstrumentationEngine
         // If flag set - only trusted instrumentation methods can be loaded
         bool m_bValidateCodeSignature;
 
+        // Map of method infos by function id. This is needed becasue some raw profiler
+        // callbacks only take a FunctionID instead of a moduleid / functionid
+        // these are cleaned up after instrumentation for the method is over.
+        std::unordered_map<FunctionID, CComPtr<CMethodInfo>> m_methodInfos;
+
         // private nested class for holding the raw pointers to the callbacks.
         // This just makes it easy to have the destructor do Release while allowing for
         // caching the qi results.
@@ -121,9 +126,9 @@ namespace MicrosoftInstrumentationEngine
             CComPtr<ICorProfilerCallback2> m_CorProfilerCallback2;
             CComPtr<ICorProfilerCallback3> m_CorProfilerCallback3;
             CComPtr<ICorProfilerCallback4> m_CorProfilerCallback4;
-			CComPtr<ICorProfilerCallback5> m_CorProfilerCallback5;
-			CComPtr<ICorProfilerCallback6> m_CorProfilerCallback6;
-			CComPtr<ICorProfilerCallback7> m_CorProfilerCallback7;
+            CComPtr<ICorProfilerCallback5> m_CorProfilerCallback5;
+            CComPtr<ICorProfilerCallback6> m_CorProfilerCallback6;
+            CComPtr<ICorProfilerCallback7> m_CorProfilerCallback7;
 
             IUnknown* GetMemberForInterface(REFGUID guidInterface)
             {
@@ -143,19 +148,19 @@ namespace MicrosoftInstrumentationEngine
                 {
                     return m_CorProfilerCallback4;
                 }
-				else if (guidInterface == __uuidof(ICorProfilerCallback5))
-				{
-					return m_CorProfilerCallback5;
-				}
-				else if (guidInterface == __uuidof(ICorProfilerCallback6))
-				{
-					return m_CorProfilerCallback6;
-				}
-				else if (guidInterface == __uuidof(ICorProfilerCallback7))
-				{
-					return m_CorProfilerCallback7;
-				}
-				else
+                else if (guidInterface == __uuidof(ICorProfilerCallback5))
+                {
+                    return m_CorProfilerCallback5;
+                }
+                else if (guidInterface == __uuidof(ICorProfilerCallback6))
+                {
+                    return m_CorProfilerCallback6;
+                }
+                else if (guidInterface == __uuidof(ICorProfilerCallback7))
+                {
+                    return m_CorProfilerCallback7;
+                }
+                else
                 {
                     CLogging::LogError(_T("CProfilerCallbackHolder::GetMemberForInterface Bogus interface member requested"));
                     return NULL;
@@ -168,6 +173,13 @@ namespace MicrosoftInstrumentationEngine
         unique_ptr<CProfilerCallbackHolder> m_profilerCallbackHolder;
 
         CComPtr<CAppDomainCollection> m_pAppDomainCollection;
+
+        // Indicates that this profiler instance was initialized via attach (instead of initialized at CLR startup).
+        bool m_bAttach;
+
+#ifndef PLATFORM_UNIX
+        CModuleHandle m_hRawProfilerModule;
+#endif
 
     public:
         CProfilerManager();
@@ -191,8 +203,6 @@ namespace MicrosoftInstrumentationEngine
         void SetInitializingInstrumentationMethodFlags(_In_ DWORD dwFlags);
         DWORD GetInitializingInstrumentationMethodFlags() const;
 
-        static HRESULT GetProfilerManagerInstance(_Out_ CProfilerManager** ppProfilerManager);
-
         HRESULT GetEventMask(_Out_ DWORD* dwEventMask);
         HRESULT SetEventMask(DWORD dwEventMask);
         HRESULT GetEventMask2(_Out_ DWORD* dwEventMaskLow, _Out_ DWORD* dwEventMaskHigh);
@@ -210,14 +220,17 @@ namespace MicrosoftInstrumentationEngine
 
         HRESULT CreateNewMethodInfo(_In_ FunctionID functionId, _Out_ CMethodInfo** ppMethodInfo);
 
-        CLogging* GetLogging();
-
+        HRESULT AddMethodInfoToMap(_In_ FunctionID functionId, _In_ CMethodInfo* pMethodInfo);
+        HRESULT RemoveMethodInfoFromMap(_In_ FunctionID functionId);
+        HRESULT GetMethodInfoById(_In_ FunctionID functionId, _Out_ CMethodInfo** ppMethodInfo);
         // IUnknown
     public:
         BEGIN_COM_MAP(CProfilerManager)
             COM_INTERFACE_ENTRY(IProfilerManager)
             COM_INTERFACE_ENTRY(IProfilerManager2)
             COM_INTERFACE_ENTRY(IProfilerManager3)
+            COM_INTERFACE_ENTRY(IProfilerManager4)
+            COM_INTERFACE_ENTRY(IProfilerManager5)
             COM_INTERFACE_ENTRY(IProfilerManagerLogging)
             COM_INTERFACE_ENTRY(ICorProfilerCallback)
             COM_INTERFACE_ENTRY(ICorProfilerCallback2)
@@ -233,33 +246,83 @@ namespace MicrosoftInstrumentationEngine
 
         // Private Helpers
     private:
-        HRESULT LoadProfilerManagerHost();
-
-        HRESULT GetProfilerManagerHostPathEnvVar();
-        HRESULT GetProfilerManagerHostGuid();
-        HRESULT GetProfilerManagerHostPathFromCLSID();
-
         DWORD CalculateEventMask(DWORD dwAdditionalFlags);
+
+        HRESULT InitializeCore(
+            _In_ IUnknown* pCorProfilerInfoUnk
+            );
 
         // The CLR doesn't initialize com before calling the profiler, and the profiler manager cannot do so itself
         // as that would screw up the com state for the application thread. This thread allows the profiler manager
         // to co create a free threaded version of msxml on a thread that it owns to avoid this.
         //
-        // lpParameter points to the this pointer so m_configFilePaths can be accessed. This is safe because the thread proc
+        // lpParameter points to the this pointer so m_configSources can be accessed. This is safe because the thread proc
         // blocks until this is complete.
         static DWORD WINAPI InstrumentationMethodThreadProc(
             _In_  LPVOID lpParameter
             );
 
+        // lpParameter points to the this pointer so m_wszConfigXml can be accessed. This is safe because the thread proc
+        // blocks until this is complete.
+        static DWORD WINAPI ParseAttachConfigurationThreadProc(
+            _In_ LPVOID lpParameter
+            );
 
-        HRESULT LoadInstrumentationMethods(_In_ BSTR bstrConfigPath);
+        /* Parses the following XML block of <Setting /> nodes into map of key-value pairs.
+         * Name and Value attributes for <Setting /> nodes are required.
+         * Duplicates are ignored.
+         *  <Settings>
+         *      <Setting Name="Key1" Value="Val1" />
+         *      <Setting Name="Key2" Value="Val2" />
+         *      <Setting Name="Key3" Value="Val3" />
+         *      ...
+         *  </Settings>
+         */
+        static HRESULT ParseSettingsConfigurationNode(
+            _In_ const CComPtr<CXmlNode>& parentNode,
+            _Inout_ unordered_map<tstring, tstring>& settings);
 
-        HRESULT ApplyInstrumentationMethodInstrumentation(_In_ CMethodInfo* pMethodInfo);
+        HRESULT LoadInstrumentationMethods(_In_ CConfigurationSource* pConfigurationSource);
 
         HRESULT DetermineClrVersion();
 
         // Set the default event mask. This is union'd with the event mask from instrumentation methods and the host.
         static DWORD GetDefaultEventMask();
+
+        //Template method to either QI or simple copy the InstrumentionMethod ComPtr. These methods support CopyInstrumentationMethods.
+        template<typename TInterfaceType>
+        HRESULT GetInterfaceType(CComPtr<IInstrumentationMethod> pRawInstrumentationMethod, TInterfaceType** pInterface)
+        {
+            return pRawInstrumentationMethod->QueryInterface(__uuidof(TInterfaceType), (void**)pInterface);
+        }
+
+        template<>
+        HRESULT GetInterfaceType(CComPtr<IInstrumentationMethod> pRawInstrumentationMethod, IInstrumentationMethod** pInterface)
+        {
+            return pRawInstrumentationMethod.CopyTo(pInterface);
+        }
+
+        template<typename TInterfaceType>
+        HRESULT CopyInstrumentationMethods(std::vector<CComPtr<TInterfaceType>>& callbackVector)
+        {
+            CCriticalSectionHolder lock(&m_cs);
+            HRESULT hr;
+            // Holding the lock during the callback functions is dangerous since rentrant
+            // events and calls will block. Copy the collection under the lock, then release it and finally call the callbacks
+            for (auto pCurrInstrumentationMethod : m_instrumentationMethods)
+            {
+                CComPtr<IInstrumentationMethod> pRawInstrumentationMethod;
+                IfFailRet(pCurrInstrumentationMethod.first->GetRawInstrumentationMethod(&pRawInstrumentationMethod));
+
+                CComPtr<TInterfaceType> pInterface;
+                if (SUCCEEDED(GetInterfaceType(pRawInstrumentationMethod, &pInterface)))
+                {
+                    callbackVector.push_back(pInterface);
+                }
+            }
+
+            return S_OK;
+        }
 
         template<typename TInterfaceType, typename TReturnType, typename... TParameters>
         HRESULT SendEventToInstrumentationMethods(TReturnType(__stdcall TInterfaceType::*method)(TParameters...), TParameters... parameters)
@@ -267,24 +330,7 @@ namespace MicrosoftInstrumentationEngine
             HRESULT hr = S_OK;
 
             vector<CComPtr<TInterfaceType>> callbackVector;
-
-            {
-                CCriticalSectionHolder lock(&m_cs);
-
-                // Holding the lock during the callback functions is dangerous since rentrant
-                // events and calls will block. Copy the collection under the lock, then release it and finally call the callbacks
-                for (auto pCurrInstrumentationMethod : m_instrumentationMethods)
-                {
-                    CComPtr<IInstrumentationMethod> pRawInstrumentationMethod;
-                    IfFailRet(pCurrInstrumentationMethod.first->GetRawInstrumentationMethod(&pRawInstrumentationMethod));
-
-                    CComPtr<TInterfaceType> pInterface;
-                    if (SUCCEEDED(pRawInstrumentationMethod->QueryInterface(__uuidof(TInterfaceType), (LPVOID*)&pInterface)))
-                    {
-                        callbackVector.push_back(pInterface);
-                    }
-                }
-            }
+            IfFailRet(CopyInstrumentationMethods(callbackVector));
 
             // Send event to instrumentation methods
             for (CComPtr<TInterfaceType> pInstrumentationMethod : callbackVector)
@@ -305,18 +351,7 @@ namespace MicrosoftInstrumentationEngine
             HRESULT hr = S_OK;
             vector<CComPtr<IInstrumentationMethod>> callbackVector;
 
-            {
-                CCriticalSectionHolder lock(&m_cs);
-
-                // Holding the lock during the callback functions is dangerous since rentrant
-                // events and calls will block. Copy the collection under the lock, then release it and finally call the callbacks
-                for (auto pCurrInstrumentationMethod : m_instrumentationMethods)
-                {
-                    CComPtr<IInstrumentationMethod> pRawInstrumentationMethod;
-                    IfFailRet(pCurrInstrumentationMethod.first->GetRawInstrumentationMethod(&pRawInstrumentationMethod));
-                    callbackVector.push_back(pRawInstrumentationMethod);
-                }
-            }
+            IfFailRet(CopyInstrumentationMethods(callbackVector));
 
             for (auto pInstrumentationMethod : callbackVector)
             {
@@ -387,18 +422,13 @@ namespace MicrosoftInstrumentationEngine
         HRESULT AssemblyUnloadStartedImpl(_In_ AssemblyID assemblyId);
         HRESULT AssemblyUnloadFinishedImpl(_In_ AssemblyID assemblyId, _In_ HRESULT hrStatus);
 
-        // Returns the LoggingFlags parsed from their representation in wszRequestedFlagNames so long as they are contained by allowedFlags.
-        LoggingFlags ExtractLoggingFlags(
-            _In_ LPCWSTR wszRequestedFlagNames,
-            _In_ LoggingFlags allowedFlags
+        HRESULT InvokeThreadRoutine(
+            _In_ LPTHREAD_START_ROUTINE threadRoutine
             );
-        // Returns the test flag if (1) it is a subset of the allowed flags and (2) the test flag name is contained by requested flag names.
-        LoggingFlags ExtractLoggingFlag(
-            _In_ LPCWSTR wszRequestedFlagNames,
-            _In_ LoggingFlags allowedFlags,
-            _In_ LPCWSTR wszSingleTestFlagName,
-            _In_ LoggingFlags singleTestFlag
-            );
+
+#ifndef PLATFORM_UNIX
+        HRESULT SetupRawProfiler();
+#endif
 
         // IProfilerManager methods
     public:
@@ -439,9 +469,8 @@ namespace MicrosoftInstrumentationEngine
 
         STDMETHOD(RemoveInstrumentationMethod(_In_ IInstrumentationMethod* pInstrumentationMethod));
 
-		// Registers a new instrumentation method in the profiler manager. Also calls its Initialize() method.
-		STDMETHOD(AddInstrumentationMethod)(_In_ BSTR bstrModulePath, _In_ BSTR bstrName, _In_ BSTR bstrDescription, _In_ BSTR bstrModule, _In_ BSTR bstrClassGuid, _In_ DWORD dwPriority, _Out_ IInstrumentationMethod** ppInstrumentationMethod);
-
+        // Registers a new instrumentation method in the profiler manager. Also calls its Initialize() method.
+        STDMETHOD(AddInstrumentationMethod)(_In_ BSTR bstrModulePath, _In_ BSTR bstrName, _In_ BSTR bstrDescription, _In_ BSTR bstrModule, _In_ BSTR bstrClassGuid, _In_ DWORD dwPriority, _Out_ IInstrumentationMethod** ppInstrumentationMethod);
 
     // IProfilerManager2 Methods
     public:
@@ -452,6 +481,14 @@ namespace MicrosoftInstrumentationEngine
     // IProfilerManager3 Methods
     public:
         STDMETHOD(GetApiVersion)(_Out_ DWORD* pApiVer);
+
+    // IProfilerManager4 Methods
+    public:
+        STDMETHOD(GetGlobalLoggingInstance)(_Out_ IProfilerManagerLogging** ppLogging);
+
+    // IProfilerManager5 Methods
+    public:
+        STDMETHOD(IsInstrumentationMethodRegistered)(_In_ REFGUID clsid, _Out_ BOOL* pfRegistered);
 
     // IProfilerManagerLogging Methods
     public:
@@ -873,23 +910,31 @@ namespace MicrosoftInstrumentationEngine
         STDMETHOD(ModuleInMemorySymbolsUpdated)(
             _In_ ModuleID moduleId);
 
-     private:
-         // Call ShouldInstrument on each instrumentation method. Return those that return true in pToInstrument
-         HRESULT CallShouldInstrumentOnInstrumentationMethods(_In_ IMethodInfo* pMethodInfo, _In_ BOOL isRejit, _Inout_ vector<CComPtr<IInstrumentationMethod>>* pToInstrument);
+        // Internal public methods that are not part of interfaces.
+    public:
+        STDMETHOD(LogMessageEx)(_In_ const WCHAR* wszMessage, ...);
 
-         // Call CallBeforeInstrumentMethodOnInstrumentationMethods on each instrumentation method.
-         HRESULT CallBeforeInstrumentMethodOnInstrumentationMethods(_In_ IMethodInfo* pMethodInfo, _In_ BOOL isRejit, _In_ vector<CComPtr<IInstrumentationMethod>>& toInstrument);
+        STDMETHOD(LogErrorEx)(_In_ const WCHAR* wszError, ...);
 
-         // Call InstrumentMethod on each instrumentation method.
-         HRESULT CallInstrumentOnInstrumentationMethods(_In_ IMethodInfo* pMethodInfo, _In_ BOOL isRejit, _In_ vector<CComPtr<IInstrumentationMethod>>& toInstrument);
+        STDMETHOD(LogDumpMessageEx)(_In_ const WCHAR* wszMessage, ...);
 
-         // Call InstrumentMethod on each instrumentation method.
-         HRESULT CallOnInstrumentationComplete(_In_ IMethodInfo* pMethodInfo, _In_ BOOL isRejit);
+    private:
+        // Call ShouldInstrument on each instrumentation method. Return those that return true in pToInstrument
+        HRESULT CallShouldInstrumentOnInstrumentationMethods(_In_ IMethodInfo* pMethodInfo, _In_ BOOL isRejit, _Inout_ vector<CComPtr<IInstrumentationMethod>>* pToInstrument);
 
-         HRESULT CallAllowInlineOnInstrumentationMethods(_In_ IMethodInfo* pInlineeMethodInfo, _In_ IMethodInfo* pInlineSiteMethodInfo, _Out_ BOOL* pbShouldInline);
+        // Call CallBeforeInstrumentMethodOnInstrumentationMethods on each instrumentation method.
+        HRESULT CallBeforeInstrumentMethodOnInstrumentationMethods(_In_ IMethodInfo* pMethodInfo, _In_ BOOL isRejit, _In_ vector<CComPtr<IInstrumentationMethod>>& toInstrument);
+
+        // Call InstrumentMethod on each instrumentation method.
+        HRESULT CallInstrumentOnInstrumentationMethods(_In_ IMethodInfo* pMethodInfo, _In_ BOOL isRejit, _In_ vector<CComPtr<IInstrumentationMethod>>& toInstrument);
+
+        // Call InstrumentMethod on each instrumentation method.
+        HRESULT CallOnInstrumentationComplete(_In_ IMethodInfo* pMethodInfo, _In_ BOOL isRejit);
+
+        HRESULT CallAllowInlineOnInstrumentationMethods(_In_ IMethodInfo* pInlineeMethodInfo, _In_ IMethodInfo* pInlineSiteMethodInfo, _Out_ BOOL* pbShouldInline);
 
         // Registers a new instrumentation method in the profiler manager. Also calls its Initialize() method.
-        HRESULT AddInstrumentationMethod(_In_ CInstrumentationMethod* method, _Out_ IInstrumentationMethod** ppInstrumentationMethod);
+        HRESULT AddInstrumentationMethod(_In_ CInstrumentationMethod* method, _In_ IEnumInstrumentationMethodSettings* pSettingsEnum, _Out_ IInstrumentationMethod** ppInstrumentationMethod);
 
         HRESULT ClearILTransformationStatus(_In_ FunctionID functionId);
 
@@ -934,7 +979,6 @@ namespace MicrosoftInstrumentationEngine
     OBJECT_ENTRY_AUTO(__uuidof(CProfilerManager), CProfilerManager);
 #endif
 
-
     // function called when a profiler callback swallows an exception to send the error report to watson as if
     // the app crashed
     void SendErrorReport(EXCEPTION_POINTERS* pException);
@@ -973,7 +1017,7 @@ public:
     CSEHTranslatorHolder()
         : released(false)
     {
-        m_oldSehTranslator = _set_se_translator(SehTranslatorFunc);
+        m_oldSehTranslator = _set_se_translator(MicrosoftInstrumentationEngine::SehTranslatorFunc);
     }
 
     void RestoreSEHTranslator()
@@ -990,7 +1034,6 @@ public:
         RestoreSEHTranslator();
     }
 };
-
 
 #define PROF_CALLBACK_BEGIN \
     CSEHTranslatorHolder translatorHolder; \
@@ -1030,8 +1073,8 @@ public:
 #endif
 
 #define IGNORE_IN_NET20_BEGIN \
-	if (m_attachedClrVersion != ClrVersion_2) \
-	{ \
+    if (m_attachedClrVersion != ClrVersion_2) \
+    { \
 
 #define IGNORE_IN_NET20_END \
-	}
+    }

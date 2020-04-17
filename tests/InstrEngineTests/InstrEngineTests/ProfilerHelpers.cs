@@ -1,5 +1,5 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
-// 
+// Licensed under the MIT License.
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
@@ -7,25 +7,34 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml;
 
 namespace InstrEngineTests
 {
+    // Mirror the LoggingFlags in InstrumentationEngine.idl
+    internal enum LogLevel
+    {
+        None = 0x0,
+        Errors = 0x1,
+        Trace = 0x2,
+        InstrumentationResults = 0x4,
+        All = 0x7,
+        Unset = 0x8
+    }
+
     internal class ProfilerHelpers
     {
         #region private fields
-        private const string TestResultFolder = "TestResults";
-
         private static readonly Guid ProfilerGuid = new Guid("{324F817A-7420-4E6D-B3C1-143FBED6D855}");
-        private static readonly Guid ProfilerManagerHostGuid = new Guid("{6AB2072F-6241-49A6-86FF-05E98A9E8748}");
 
-        private const string HostGuidEnvName = "MicrosoftInstrumentationEngine_Host";
-        private const string HostPathEnvName = "MicrosoftInstrumentationEngine_HostPath";
-        private const string HostConfigPathEnvName = "MicrosoftInstrumentationEngine_ConfigPath";
+        private const string HostConfig32PathEnvName = "MicrosoftInstrumentationEngine_ConfigPath32_";
+        private const string HostConfig64PathEnvName = "MicrosoftInstrumentationEngine_ConfigPath64_";
 
         private const string TestOutputEnvName = "Nagler_TestOutputPath";
         private const string TestScriptFileEnvName = "Nagler_TestScript";
-        private const string TestOutputFileEnvName = "Nagler_TestOutput";
+        private const string TestOutputFileEnvName = "MicrosoftInstrumentationEngine_FileLogPath";
         private const string IsRejitEnvName = "Nagler_IsRejit";
 
         #endregion
@@ -36,11 +45,11 @@ namespace InstrEngineTests
 
         private static bool BinaryRecompiled = false;
 
-        public static void LaunchAppAndCompareResult(string testApp, string fileName, string args = null)
+        public static void LaunchAppAndCompareResult(string testApp, string fileName, string args = null, bool regexCompare = false)
         {
             // Usually we use the same file name for test script, baseline and test result
             ProfilerHelpers.LaunchAppUnderProfiler(testApp, fileName, fileName, false, args);
-            ProfilerHelpers.DiffResultToBaseline(fileName, fileName);
+            ProfilerHelpers.DiffResultToBaseline(fileName, fileName, regexCompare);
         }
 
         public static void LaunchAppUnderProfiler(string testApp, string testScript, string output, bool isRejit, string args)
@@ -69,6 +78,14 @@ namespace InstrEngineTests
             psi.EnvironmentVariables.Add("COR_PROFILER", ProfilerGuid.ToString("B"));
             psi.EnvironmentVariables.Add("COR_PROFILER_PATH", Path.Combine(PathUtils.GetAssetsPath(), string.Format("MicrosoftInstrumentationEngine_{0}.dll", bitnessSuffix)));
 
+            if (!TestParameters.DisableLogLevel)
+            {
+                psi.EnvironmentVariables.Add("MicrosoftInstrumentationEngine_LogLevel", "Dumps");
+            }
+
+            // Uncomment this line to debug tests
+            //psi.EnvironmentVariables.Add("MicrosoftInstrumentationEngine_DebugWait", "1");
+
             if (ThrowMessageBoxAtStartup)
             {
                 psi.EnvironmentVariables.Add("MicrosoftInstrumentationEngine_MessageboxAtAttach", @"1");
@@ -79,10 +96,55 @@ namespace InstrEngineTests
                 psi.EnvironmentVariables.Add("MicrosoftInstrumentationEngine_DisableCodeSignatureValidation", @"1");
             }
 
-            psi.EnvironmentVariables.Add(HostGuidEnvName, ProfilerManagerHostGuid.ToString("B"));
-            psi.EnvironmentVariables.Add(HostPathEnvName, Path.Combine(PathUtils.GetAssetsPath(), string.Format("NaglerProfilerHost_{0}.dll", bitnessSuffix)));
-            psi.EnvironmentVariables.Add(HostConfigPathEnvName, Path.Combine(PathUtils.GetAssetsPath(), string.Format("InstrumentationMethod_{0}.xml", bitnessSuffix)));
+            if (TestParameters.DisableMethodPrefix)
+            {
+                psi.EnvironmentVariables.Add("MicrosoftInstrumentationEngine_DisableLogMethodPrefix", @"1");
+            }
+
+            if (TestParameters.MethodLogLevel != LogLevel.Unset)
+            {
+                StringBuilder methodLogLevelBuilder = new StringBuilder();
+                if ((TestParameters.MethodLogLevel & LogLevel.All) == LogLevel.None)
+                {
+                    methodLogLevelBuilder.Append("|None");
+                }
+                else
+                {
+                    if ((TestParameters.MethodLogLevel & LogLevel.All) == LogLevel.All)
+                    {
+                        methodLogLevelBuilder.Append("|All");
+                    }
+                    else
+                    {
+                        if ((TestParameters.MethodLogLevel & LogLevel.Errors) == LogLevel.Errors)
+                        {
+                            methodLogLevelBuilder.Append("|Errors");
+                        }
+
+                        if ((TestParameters.MethodLogLevel & LogLevel.Trace) == LogLevel.Trace)
+                        {
+                            methodLogLevelBuilder.Append("|Messages");
+                        }
+
+                        if ((TestParameters.MethodLogLevel & LogLevel.InstrumentationResults) == LogLevel.InstrumentationResults)
+                        {
+                            methodLogLevelBuilder.Append("|Dumps");
+                        }
+                    }
+                }
+
+                psi.EnvironmentVariables.Add("MicrosoftInstrumentationEngine_LogLevel_D2959618-F9B6-4CB6-80CF-F3B0E3263888", methodLogLevelBuilder.ToString());
+            }
+            else
+            {
+                // This variable overrides ALL logging levels for FileLoggerSink.
+                psi.EnvironmentVariables.Add("MicrosoftInstrumentationEngine_FileLog", "Dumps");
+            }
+
             psi.EnvironmentVariables.Add(TestOutputEnvName, PathUtils.GetAssetsPath());
+            psi.EnvironmentVariables.Add(
+                is32bitTest? HostConfig32PathEnvName : HostConfig64PathEnvName,
+                Path.Combine(PathUtils.GetAssetsPath(), string.Format("NaglerInstrumentationMethod_{0}.xml", bitnessSuffix)));
 
             string scriptPath = Path.Combine(PathUtils.GetTestScriptsPath(), testScript);
 
@@ -124,48 +186,98 @@ namespace InstrEngineTests
             return docs.ToArray();
         }
 
-        public static void DiffResultToBaseline(string output, string baseline)
+        public static void DiffResultToBaseline(string output, string baseline, bool regexCompare = false)
         {
             string outputPath = Path.Combine(PathUtils.GetTestResultsPath(), output);
             string baselinePath = Path.Combine(PathUtils.GetBaselinesPath(), baseline);
 
-            string baselineStr;
-            string outputStr;
-
-            using (StreamReader baselineStream = new StreamReader(baselinePath))
+            try
             {
+                string baselineStr;
+                string outputStr;
+
+                List<string> baselineStrList = new List<string>();
+                List<string> outputStrList = new List<string>();
+
+                using (StreamReader baselineStream = new StreamReader(baselinePath))
                 using (StreamReader outputStream = new StreamReader(outputPath))
                 {
-                    baselineStr = baselineStream.ReadToEnd();
-                    outputStr = outputStream.ReadToEnd();
+                    string tmpStr;
+
+                    StringBuilder strBuilder = new StringBuilder();
+                    while ((tmpStr = baselineStream.ReadLine()) != null)
+                    {
+                        if (!string.IsNullOrEmpty(tmpStr))
+                        {
+                            strBuilder.Append(tmpStr);
+                            baselineStrList.Add($"^{tmpStr}$");
+                        }
+                    }
+                    baselineStr = strBuilder.ToString();
+
+                    strBuilder = new StringBuilder();
+                    while ((tmpStr = outputStream.ReadLine()) != null)
+                    {
+                        if (!string.IsNullOrEmpty(tmpStr) &&
+                            !tmpStr.StartsWith("[TestIgnore]"))
+                        {
+                            strBuilder.Append(tmpStr);
+                            outputStrList.Add(tmpStr);
+                        }
+                    }
+                    outputStr = strBuilder.ToString();
+                }
+
+                if (regexCompare)
+                {
+                    Assert.IsTrue(baselineStrList.Count == outputStrList.Count, "Baseline file line count does not match output file line count.");
+
+                    for (int i = 0; i < baselineStrList.Count; i++)
+                    {
+                        Match match = Regex.Match(outputStrList[i], baselineStrList[i]);
+                        if (!match.Success)
+                        {
+                            Assert.Fail("Baseline file regex failed to match output file:\n" + baselineStrList[i] + "\n" + outputStrList[i]);
+                        }
+                    }
+                }
+                else
+                {
+                    // Use XML comparison
+                    string[] baselineDocs = SplitXmlDocuments(baselineStr);
+                    string[] outputDocs = SplitXmlDocuments(outputStr);
+
+                    Assert.AreEqual(baselineDocs.Length, outputDocs.Length);
+                    for (int docIdx = 0; docIdx < baselineDocs.Length; docIdx++)
+                    {
+
+                        string baselineXmlDocStr = baselineDocs[docIdx];
+                        string outputXmlDocStr = outputDocs[docIdx];
+
+                        XmlDocument baselineDocument = new XmlDocument();
+                        baselineDocument.LoadXml(baselineXmlDocStr);
+
+                        XmlDocument outputDocument = new XmlDocument();
+                        outputDocument.LoadXml(outputXmlDocStr);
+
+                        Assert.AreEqual(baselineDocument.ChildNodes.Count, outputDocument.ChildNodes.Count);
+
+                        for (int i = 0; i < baselineDocument.ChildNodes.Count; i++)
+                        {
+                            XmlNode currBaselineNode = baselineDocument.ChildNodes[i];
+                            XmlNode currOutputNode = outputDocument.ChildNodes[i];
+
+                            DiffResultToBaselineNode(currBaselineNode, currOutputNode);
+                        }
+                    }
                 }
             }
-
-            string[] baselineDocs = SplitXmlDocuments(baselineStr);
-            string[] outputDocs = SplitXmlDocuments(outputStr);
-
-            Assert.AreEqual(baselineDocs.Length, outputDocs.Length);
-            for (int docIdx = 0; docIdx < baselineDocs.Length; docIdx++)
+            catch (AssertFailedException)
             {
-
-                string baselineXmlDocStr = baselineDocs[docIdx];
-                string outputXmlDocStr = outputDocs[docIdx];
-
-                XmlDocument baselineDocument = new XmlDocument();
-                baselineDocument.LoadXml(baselineXmlDocStr);
-
-                XmlDocument outputDocument = new XmlDocument();
-                outputDocument.LoadXml(outputXmlDocStr);
-
-                Assert.AreEqual(baselineDocument.ChildNodes.Count, outputDocument.ChildNodes.Count);
-
-                for (int i = 0; i < baselineDocument.ChildNodes.Count; i++)
-                {
-                    XmlNode currBaselineNode = baselineDocument.ChildNodes[i];
-                    XmlNode currOutputNode = outputDocument.ChildNodes[i];
-
-                    DiffResultToBaselineNode(currBaselineNode, currOutputNode);
-                }
+                Console.WriteLine($"Baseline FilePath: {baselinePath}");
+                Console.WriteLine();
+                Console.WriteLine($"Output FilePath: {outputPath}");
+                throw;
             }
         }
 
@@ -176,7 +288,6 @@ namespace InstrEngineTests
             if (String.CompareOrdinal(baselineNode.Name, outputNode.Name) != 0)
             {
                 Assert.Fail("Baseline node name does not equal output node name\n" + baselineNode.Name + "\n" + outputNode.Name);
-                return;
             }
 
             bool isVolatile = baselineNode.Attributes != null &&
@@ -190,7 +301,6 @@ namespace InstrEngineTests
                 if (CompareOrdinalNormalizeLineEndings(baselineNode.Value, outputNode.Value) != 0)
                 {
                     Assert.Fail("Baseline value does not equal output value\n" + baselineNode.Value + "\n" + outputNode.Value);
-                    return;
                 }
 
                 Assert.AreEqual(baselineNode.ChildNodes.Count, outputNode.ChildNodes.Count);
@@ -210,10 +320,9 @@ namespace InstrEngineTests
         private static int CompareOrdinalNormalizeLineEndings(string a, string b)
         {
             string normalA = a?.Replace("\r\n", "\n");
-            string normalB = a?.Replace("\r\n", "\n");
+            string normalB = b?.Replace("\r\n", "\n");
             return String.CompareOrdinal(normalA, normalB);
         }
-
 
         private static XmlDocument LoadTestScript(string testScript)
         {

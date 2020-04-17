@@ -1,33 +1,65 @@
-# Building the CLR Instrumentation Engine
+﻿# Building the CLR Instrumentation Engine
 
-CI/CD Builds for the CLR Instrumentation Engine are currently managed in a private Visual Studio Team Services (VSTS) account. We restrict access to this build as it provides internal processes such as signing and security checks. If you require modifications or changes to the build, please reach out to clrieowners@microsoft.com.
+CI/CD Builds for the CLR Instrumentation Engine are defined with yaml files (see build/yaml/ folder) which are leveraged by Azure DevOps
+pipeline builds.
 
-## Automated VSTS builds
+## Azure DevOps Build
 
-Please contact clrieowners@microsoft.com to request releasing a new version.
+Azure DevOps (previously known as Visual Studio Team Services or "VSTS") is the suite of tools and services for the end-to-end lifecycle of
+software development. It provides repos that host source code, task boards for work tracking, test suites and build pipelines for compiling code, and
+artifact management to retain packages such as nuget feeds.
+
+Although the CLRIE repo is hosted in GitHub, it originally was hosted privately by Microsoft and leveraged Azure DevOps pipelines to build and
+release packages for internal consumption. In the spirit of Open-Source, these processes are slowly being rolled out publicly to expand and
+share ownership with external partners and users.
+
+Although the build agents and tasks are internal, the build definitions are declared in the repo in the form of yaml files.
+
+### Yaml
+
+[Yaml Schema Reference](https://docs.microsoft.com/azure/devops/pipelines/yaml-schema?view=azure-devops&tabs=schema)
+
+The yaml files are located in the $RepoRoot$/build/yaml folder. The code is structured in the following manner:
+* Pipelines – The top level yaml file that is queued for a given Azure DevOps build. A pipeline defines the jobs to run.
+  * [PR-Yaml](https://dev.azure.com/ms/CLRInstrumentationEngine/_build?definitionId=230&_a=summary) points to [build/yaml/pipelines/PR.yaml](../build/yaml/pipelines/pr.yaml)
+  * [CI-Yaml](https://devdiv.visualstudio.com/DevDiv/_build?definitionId=11310) points to [build/yaml/pipelines/CI.yaml](../build/yaml/pipelines/ci.yaml)
+  * (Internal) [ClrInstrumentationEngine-Signed-Yaml](https://devdiv.visualstudio.com/DevDiv/_build?definitionId=11311) points [build/yaml/pipelines/Signed.yaml](../build/yaml/pipelines/signed.yaml)
+* Jobs – A job represents the execution boundary of a set of steps on an agent machine.
+  * The three high-level jobs include Binaries.yaml, Test.yaml, and Packages.yaml.
+  * Jobs/Binaries.yaml and Jobs/Packages.yaml reference the corresponding files in the Windows and Linux folders for parallelization
+* Steps – The task to run (eg. Nuget restore, msbuild solution, copy files).
+
+We restrict access of running the above builds to Microsoft and close contributors as to avoid malicious code from running. The signed build requires internal processes (signing and security checks) and will not be exposed to the public. If you require
+modifications or changes to the build, you are free to update the yaml files.
+
+Please contact clrieowners@microsoft.com regarding questions or requesting the release of a new version. This process involves regression
+testing with both our internal Microsoft products as well as the products of external partners.
 
 ## Building locally
 
 ### Windows
 
 On Windows we use MSBuild, with `.vcxproj` files to build native binaries and `.csproj` files to build the NuGet/Zip packages.
-1. Install Visual Studio 2017 with the following Workloads and Components:
+1. Install Visual Studio 2019 with the following Workloads and Components:
     - **[Workload]** .NET desktop development
     - **[Workload]** Desktop development with C++
-    - **[Component]** Windows 10 SDK (10.0.14393)
+    - **[Component]** Windows 10 SDK (10.0.18362)
     - **[Component]** Visual C++ ATL for x86 and x64
-    - **[Component]** VC++ 2017 version 15.8 v14.15 Libs for Spectre (x86 and x64)
-2. Open `InstrumentationEngine.sln` and `src/InstrumentationEngine.Packages.sln` in Visual Studio 2017
-3. Either run "Build Solution" for a single configuration, or "Build > Batch Build..." to build all configurations (Debug|Release with x86|x64|AnyCPU).
+    - **[Component]** VC++ 2019 version v14.2x Libs for Spectre (x86 and x64)
+2. Open `InstrumentationEngine.sln` and `src/InstrumentationEngine.Packages.sln` in Visual Studio 2019
+3. Either run "Build Solution" for a single configuration, or "Build > Batch Build..." to build all configurations
+(Debug|Release with x86|x64|AnyCPU).
 
 Alternatively, you may run the script `[CLRInstrumentationEngine repo]\build.ps1` in PowerShell which conducts a local build.
+
 |Flag|Description|
 |-|-|
 IncludeTests|Runs unit tests after build.
 SkipBuild|Skips building the solutions. Use this with `-IncludeTests` flag to only run tests.
 SkipPackaging|Skips building the package solution. This prevents generating zip files, nugets, and any other artifacts.
+SkipCleanAndRestore|Skips cleaning the bin/ & obj/ folders before building. This saves time when rebuilding due to small changes.
 Release|Cause build to run with `Release` configuration. By default, build uses `Debug` configuration.
-Verbose|Sets msbuild verbosity to `normal`. By default, verbosity is set to `ErrorsOnly`.
+VerboseMsbuild|Sets msbuild verbosity to `normal`. By default, verbosity is set to `ErrorsOnly`.
 
 If you encounter this error:
 
@@ -39,9 +71,15 @@ Please clean the solution or delete the bin folder and then try building again.
 
 Currently we are not ready for external partners to build for Linux.
 
-On Linux we use CMake, with CMakeLists.txt files in each native component's root folder. Build using the script `:/src/Build.sh`. Note that we have some limitations for now:
+On Linux we use CMake, with CMakeLists.txt files in each native component's root folder. Build using the script `/src/Build.sh`. Note that we
+have some limitations for now:
 * Cannot generate InstrumentationEngine.h yet, therefore...
 * It is necessary to build your corresponding flavor/architecture in Windows first so that InstrumentationEngine.h is generated by midl and placed on the expected path.
-* We only support compiling for 64bit Linux.
+* We only support compiling for 64bit Linux and only support specific versions of Alpine, Ubuntu, and Debian.
 * NuGet package building is currently not implemented.
 
+Since the CLRIE contains C++ code that depends on a mix of C++ standard functions (eg. wprintf) and
+Windows-specific functions (eg. GetEnvironmentVariable from winbase.h), we leverage the same library
+that the [dotnet Core CLR](https://github.com/dotnet/coreclr) uses to compile on Linux: the [Platform Abstraction Layer or "PAL"](https://github.com/dotnet/coreclr/blob/master/src/pal/inc/pal.h).
+
+WARNING: If you attempt to build on Linux, you may see a CoreCLRPAL package. This package is customized to support a subset of the PAL which is used by some internal Microsoft products including the CLRIE. We offer no guarantees or warranties as to the correctness of this package and can update at our own discretion based on the needs of our products and features. We strongly encourage users to generate their own package from the dotnet Core CLR repo instead.

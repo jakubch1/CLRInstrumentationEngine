@@ -1,5 +1,5 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
-# 
+# Licensed under the MIT License.
 
 # Require at least version 2.8.12 of CMake
 cmake_minimum_required(VERSION 2.8.12)
@@ -25,14 +25,12 @@ set(src_files
     ./CorMethodMalloc.cpp
     ./CorProfilerFunctionControlWrapper.cpp
     ./CorProfilerInfoWrapper.cpp
-    ./DataContainer.cpp
     ./dllmain.cpp
     ./ExceptionClause.cpp
     ./ExceptionSection.cpp
     ./FunctionType.cpp
     ./GenericInstanceType.cpp
     ./GenericParameterType.cpp
-    ./ImplQueryInterface.cpp
     ./InlineSite.cpp
     ./InlineSiteMap.cpp
     ./Instruction.cpp
@@ -46,7 +44,7 @@ set(src_files
     ./ModifierType.cpp
     ./ModuleInfo.cpp
     ./ProfilerManager.cpp
-    ./refcount.cpp
+    ./ProfilerManagerForInstrumentationMethod.cpp
     ./SignatureBuilder.cpp
     ./SimpleType.cpp
     ./SingleRetDefaultInstrumentation.cpp
@@ -64,6 +62,7 @@ add_lib(${PROJECT_NAME}
     )
 
 # Force every object to be included even if it's unused.
+SET (ATL -Wl,--whole-archive atl -Wl,--no-whole-archive)
 SET (CORECLRPAL -Wl,--whole-archive coreclrpal -Wl,--no-whole-archive)
 SET (LINUXPAL -Wl,--whole-archive linux_pal -Wl,--no-whole-archive)
 #SET (LINUXPALRT -Wl,--whole-archive palrt -Wl,--no-whole-archive)
@@ -85,7 +84,7 @@ target_link_libraries(${PROJECT_NAME}
     ${LIBXML2_LIBRARIES}
     ${CORECLRPAL}
     ${LINUXPAL}
-    atl
+    ${ATL}
     palrt
     InstrumentationEngine.Api
     InstrumentationEngine.Lib
@@ -95,4 +94,5 @@ target_link_libraries(${PROJECT_NAME}
     )
 
 #ensure that the linux pal gets built before this
+add_dependencies(${PROJECT_NAME} atl)
 add_dependencies(${PROJECT_NAME} linux_pal)

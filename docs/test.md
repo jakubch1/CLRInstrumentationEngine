@@ -1,5 +1,11 @@
 # Testing the CLR Instrumentation Engine.
 
+## Testing locally
+
+### Windows
+
+The [WindowsLocalTest.ps1](../src/Scripts/WindowsLocalTest.ps1) script requires installing the ClrInstrumentationEngine msi or msm and launches a user-specified application (or another PowerShell process) with the COR_PROFILER environment variables set. The script takes switch parameters to configure several environment variables (like DebugWait) as well as one InstrumentationMethod config path and RawProfilerHook Guid and path.
+
 ## Running unit tests locally
 
 ### Windows
@@ -18,7 +24,8 @@ There are two ways to run the CLR Instrumentation Engine unit tests - Visual Stu
 
 #### Via Script
 
-Run the script `[CLRInstrumentationEngine repo]\build.ps1` with IncludeTests. This will invoke the unit tests for x86, x64, and AnyCPU against either `Debug` or `Release` configuration.
+Run the script `[CLRInstrumentationEngine repo]\build.ps1` with IncludeTests. This will invoke the unit tests for x86, x64, and AnyCPU against
+either `Debug` or `Release` configuration post-build.
 |Flag|Description|
 |-|-|
 IncludeTests|Runs unit tests after build.
@@ -28,4 +35,5 @@ Verbose|Sets msbuild verbosity to `normal`. By default, verbosity is set to `Err
 
 ### Linux
 
-Currently there are no unit tests support for Linux. However, Linux builds will run via PR validations. Please contact clrieowners@microsoft.com for more details.
+Currently there are no unit tests support for Linux. However, Linux builds will run via PR validations. Please contact
+clrieowners@microsoft.com for more details.

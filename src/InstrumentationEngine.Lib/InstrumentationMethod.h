@@ -1,5 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
-// 
+// Licensed under the MIT License.
 
 #pragma once
 
@@ -17,7 +17,7 @@ namespace MicrosoftInstrumentationEngine
         CComBSTR m_bstrName;
         CComBSTR m_bstrDescription;
         CComBSTR m_bstrModuleFolder;
-		CComBSTR m_bstrModule;
+        CComBSTR m_bstrModule;
         DWORD m_dwPriority;
 
         GUID m_guidClassId;
@@ -35,12 +35,28 @@ namespace MicrosoftInstrumentationEngine
             _In_ DWORD dwPriority
             );
 
-        HRESULT Initialize(_In_ IProfilerManager* pProfilerManager, bool validateCodeSignature);
+        HRESULT Initialize(
+            _In_ IProfilerManager* pProfilerManager,
+            _In_ bool validateCodeSignature
+            );
+
+        HRESULT InitializeForAttach(
+            _In_ IProfilerManager* pProfilerManager,
+            _In_ IEnumInstrumentationMethodSettings* pSettingsEnum,
+            _In_ bool validateCodeSignature
+            );
+
+        HRESULT AttachComplete();
 
         HRESULT GetRawInstrumentationMethod(_Out_ IInstrumentationMethod** ppInstrumentationMethod);
 
         REFGUID GetClassId();
 
         DWORD GetPriority();
+
+    private:
+        HRESULT InitializeCore(
+            _In_ bool validateCodeSignature
+            );
     };
 }

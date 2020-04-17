@@ -1,0 +1,28 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
+
+# Step Template: Build Linux Binaries
+
+steps:
+# Login to ACR
+- task: Docker@2
+  displayName: Docker Login
+  inputs:
+    containerRegistry: VS Diagnostics Dev (ProdDiagBuild)
+    command: login
+
+# Build binaries
+- task: Bash@3
+  displayName: Docker Build
+  inputs:
+    filePath: src/unix/docker/docker-build.sh
+    arguments: $(Distro) $(Configuration) $(Platform) verbose
+
+# Cleanup containers
+- task: Bash@3
+  displayName: Cleanup Containers
+  inputs:
+    filePath: src/unix/docker/docker-rm.sh
+    arguments: aerobee-build
+  continueOnError: true
+  condition: always()

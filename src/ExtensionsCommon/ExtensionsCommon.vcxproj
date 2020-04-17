@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!-- Copyright (c) Microsoft Corporation. All rights reserved.
-      -->
-<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+     Licensed under the MIT License. -->
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), EnlistmentRoot.marker))\build\Common.props" />
   <PropertyGroup Label="Globals">
     <ProjectGuid>{9D2F97F8-DE2E-4463-A425-823A755159BC}</ProjectGuid>
@@ -15,24 +15,23 @@
   <ItemDefinitionGroup>
     <ClCompile>
       <PreprocessorDefinitions>_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <EnablePREfast Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</EnablePREfast>
+      <EnablePREfast>true</EnablePREfast>
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <AdditionalIncludeDirectories>$(InstrumentationEngineApiInc);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="AgentTls.h" />
     <ClInclude Include="AgentTrace.h" />
     <ClInclude Include="AgentValidation.h" />
-    <ClInclude Include="banned.h" />
     <ClInclude Include="DataItemContainer.h" />
     <ClInclude Include="DecorationCallbackInfo.h" />
     <ClInclude Include="DecorationCallbackRefInfo.h" />
     <ClInclude Include="DecorationCallbacksInfo.h" />
     <ClInclude Include="DecorationCallbacksInfoReader.h" />
     <ClInclude Include="DecorationCallbacksInfoStaticReader.h" />
-    <ClInclude Include="Environment.h" />
     <ClInclude Include="Exception.h" />
     <ClInclude Include="CrtDiagnostics.h" />
     <ClInclude Include="FormatMessage.h" />
@@ -53,12 +52,9 @@
     <ClInclude Include="LoadArgumentsHelper.h" />
     <ClInclude Include="MethodInstrumentationInfoKey.h" />
     <ClInclude Include="MethodRecord.h" />
-    <ClInclude Include="ModuleHandle.h" />
     <ClInclude Include="NativeInstanceMethodInstrumentationInfo.h" />
     <ClInclude Include="NativeInstanceMethodsCodeInjector.h" />
     <ClInclude Include="ManagedRedirectCodeInjector.h" />
-    <ClInclude Include="ModuleUtils.h" />
-    <ClInclude Include="PathUtils.h" />
     <ClInclude Include="Precompiled.h" />
     <ClInclude Include="ProfilerHostServices.h" />
     <ClInclude Include="ProfilerManagerHostBase.h" />
@@ -78,7 +74,6 @@
     <ClCompile Include="DecorationCallbacksInfo.cpp" />
     <ClCompile Include="DecorationCallbacksInfoReader.cpp" />
     <ClCompile Include="DecorationCallbacksInfoStaticReader.cpp" />
-    <ClCompile Include="Environment.cpp" />
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="INativeMethodsStubs.h" />
     <ClCompile Include="InstrumentationMethodBase.cpp" />
@@ -86,12 +81,9 @@
     <ClCompile Include="LoadArgumentsHelper.cpp" />
     <ClCompile Include="MethodInstrumentationInfoCollection.cpp" />
     <ClCompile Include="MethodInstrumentationInfoKey.cpp" />
-    <ClCompile Include="ModuleHandle.cpp" />
     <ClCompile Include="NativeInstanceMethodInstrumentationInfo.cpp" />
     <ClCompile Include="NativeInstanceMethodsCodeInjector.cpp" />
     <ClCompile Include="ManagedRedirectCodeInjector.cpp" />
-    <ClCompile Include="ModuleUtils.cpp" />
-    <ClCompile Include="PathUtils.cpp" />
     <ClCompile Include="ProfilerManagerHostBase.cpp" />
     <ClCompile Include="ReflectionHelper.cpp" />
     <ClCompile Include="stdafx.cpp">
