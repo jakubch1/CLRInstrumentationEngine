@@ -33,7 +33,7 @@ HRESULT CConfigurationLoaderHelper::LoadConfiguration(_In_ BSTR bstrConfigPath, 
     hr = pDocument->load(CComVariant(bstrConfigPath), &vbResult);
     if (FAILED(hr) || vbResult != VARIANT_TRUE)
     {
-        CLogging::LogError(_T("Failed to load the configuration"));
+        //CLogging::LogError(_T("Failed to load the configuration"));
         return E_FAIL;
     }
 
@@ -46,7 +46,7 @@ HRESULT CConfigurationLoaderHelper::LoadConfiguration(_In_ BSTR bstrConfigPath, 
 
     if (wcscmp(bstrDocumentNodeName, _T("InstrumentationEngineConfiguration")) != 0)
     {
-        CLogging::LogError(_T("Invalid configuration. Root element should be InstrumentationEngineConfiguration"));
+        //CLogging::LogError(_T("Invalid configuration. Root element should be InstrumentationEngineConfiguration"));
         return E_FAIL;
     }
 
@@ -55,7 +55,7 @@ HRESULT CConfigurationLoaderHelper::LoadConfiguration(_In_ BSTR bstrConfigPath, 
     errno_t error = wcscpy_s(wszConfigFolder, MAX_PATH, bstrConfigPath);
     if (error != 0)
     {
-        CLogging::LogError(_T("Copy failed in CConfigurationLoader::LoadConfiguration. Errno=%d"), error);
+        //CLogging::LogError(_T("Copy failed in CConfigurationLoader::LoadConfiguration. Errno=%d"), error);
         return E_FAIL;
     }
     wszConfigFolder[MAX_PATH - 1] = 0;
@@ -85,7 +85,7 @@ HRESULT CConfigurationLoaderHelper::LoadConfiguration(_In_ BSTR bstrConfigPath, 
 
         if ((wcscmp(bstrCurrNodeName, _T("InstrumentationMethod")) != 0) && (wcscmp(bstrCurrNodeName, InstrumentationEnginePlatformNode) != 0))
         {
-            CLogging::LogError(_T("Invalid configuration. Element should be InstrumentationMethod, InstrumentationMethod32 or InstrumentationMethod64"));
+            //CLogging::LogError(_T("Invalid configuration. Element should be InstrumentationMethod, InstrumentationMethod32 or InstrumentationMethod64"));
             return E_FAIL;
         }
 
@@ -181,14 +181,14 @@ HRESULT CConfigurationLoaderHelper::ProcessInstrumentationMethodNode(_In_ BSTR b
                 dwPriority = (DWORD)(_wtoi64(varNodeValue.bstrVal));
                 if (errno == ERANGE)
                 {
-                    CLogging::LogError(_T("Invalid configuration. Priority should be a positive number"));
+                    //CLogging::LogError(_T("Invalid configuration. Priority should be a positive number"));
                     return E_FAIL;
                 }
             }
         }
         else
         {
-            CLogging::LogError(_T("Invalid configuration. Unknown Element"));
+            //CLogging::LogError(_T("Invalid configuration. Unknown Element"));
             return E_FAIL;
         }
     }
@@ -198,7 +198,7 @@ HRESULT CConfigurationLoaderHelper::ProcessInstrumentationMethodNode(_In_ BSTR b
         (bstrModule.Length() == 0) ||
         (bstrClassGuid.Length() == 0))
     {
-        CLogging::LogError(_T("Invalid configuration. Missing child element"));
+        //CLogging::LogError(_T("Invalid configuration. Missing child element"));
         return E_FAIL;
     }
 
@@ -206,7 +206,7 @@ HRESULT CConfigurationLoaderHelper::ProcessInstrumentationMethodNode(_In_ BSTR b
     hr = IIDFromString(bstrClassGuid, (LPCLSID)&guidClassId);
     if (FAILED(hr))
     {
-        CLogging::LogError(_T("CInstrumentationMethod::Initialize - Bad classid for instrumentation method"));
+        //CLogging::LogError(_T("CInstrumentationMethod::Initialize - Bad classid for instrumentation method"));
         return E_INVALIDARG;
     }
 
@@ -260,13 +260,13 @@ HRESULT CConfigurationLoaderHelper::LoadConfiguration(_In_ BSTR bstrConfigPath, 
 
     if (pRoot == NULL || pRoot->type != XML_ELEMENT_NODE)
     {
-        CLogging::LogError(_T("Invalid configuration file."));
+        //CLogging::LogError(_T("Invalid configuration file."));
         return E_FAIL;
     }
 
     if ((strncmp((char*)pRoot->name, "InstrumentationEngineConfiguration", ConfigurationLoaderFieldMaxLength) != 0))
     {
-        CLogging::LogError(_T("Invalid configuration. Root element should be InstrumentationEngineConfiguration"));
+        //CLogging::LogError(_T("Invalid configuration. Root element should be InstrumentationEngineConfiguration"));
         return E_FAIL;
     }
 
@@ -284,7 +284,7 @@ HRESULT CConfigurationLoaderHelper::LoadConfiguration(_In_ BSTR bstrConfigPath, 
             if ((strncmp((char*)pCurrInstrumenationMethodNode->name, "InstrumentationMethod", ConfigurationLoaderFieldMaxLength) != 0) &&
                 (strncmp((char*)pCurrInstrumenationMethodNode->name, InstrumentationEnginePlatformNode, ConfigurationLoaderFieldMaxLength) != 0))
             {
-                CLogging::LogError(_T("Invalid configuration. Element should be InstrumentationMethod, InstrumentationMethod32 or InstrumentationMethod64"));
+                //CLogging::LogError(_T("Invalid configuration. Element should be InstrumentationMethod, InstrumentationMethod32 or InstrumentationMethod64"));
                 return E_FAIL;
             }
 
@@ -405,14 +405,14 @@ HRESULT CConfigurationLoaderHelper::ProcessInstrumentationMethodNode(_In_ BSTR b
 
                 if (errno == ERANGE)
                 {
-                    CLogging::LogError(_T("Invalid configuration. Priority should be a positive number"));
+                    //CLogging::LogError(_T("Invalid configuration. Priority should be a positive number"));
                     return E_FAIL;
                 }
             }
         }
         else
         {
-            CLogging::LogError(_T("Invalid configuration. Unknown Element"));
+            //CLogging::LogError(_T("Invalid configuration. Unknown Element"));
             return E_FAIL;
         }
     }
@@ -422,7 +422,7 @@ HRESULT CConfigurationLoaderHelper::ProcessInstrumentationMethodNode(_In_ BSTR b
         (bstrModule.Length() == 0) ||
         (bstrClassGuid.Length() == 0))
     {
-        CLogging::LogError(_T("Invalid configuration. Missing child element"));
+        //CLogging::LogError(_T("Invalid configuration. Missing child element"));
         return E_FAIL;
     }
 
@@ -430,7 +430,7 @@ HRESULT CConfigurationLoaderHelper::ProcessInstrumentationMethodNode(_In_ BSTR b
     hr = IIDFromString(bstrClassGuid, (LPCLSID)&guidClassId);
     if (FAILED(hr))
     {
-        CLogging::LogError(_T("CInstrumentationMethod::Initialize - Bad classid for instrumentation method"));
+        //CLogging::LogError(_T("CInstrumentationMethod::Initialize - Bad classid for instrumentation method"));
         return E_INVALIDARG;
     }
 

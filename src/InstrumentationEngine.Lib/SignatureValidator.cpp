@@ -122,7 +122,6 @@ bool CSignatureValidator::VerifyEmbeddedSignature(_In_ LPCWSTR pwszSourceFile)
         "Yes" when asked to install and run the signed
         subject.
         */
-        CLogging::LogMessage(_T("The file is signed and the signature was verified"));
         result = true;
         break;
 
@@ -136,12 +135,12 @@ bool CSignatureValidator::VerifyEmbeddedSignature(_In_ LPCWSTR pwszSourceFile)
             TRUST_E_SUBJECT_FORM_UNKNOWN == dwLastError ||
             TRUST_E_PROVIDER_UNKNOWN == dwLastError)
         {
-            CLogging::LogError(_T("The file is not signed."));
+            //CLogging::LogError(_T("The file is not signed."));
             result = false;
         }
         else
         {
-            CLogging::LogError(_T("An unknown error occurred trying to verify the signature of the file."));
+            //CLogging::LogError(_T("An unknown error occurred trying to verify the signature of the file."));
             result = false;
         }
 
@@ -150,13 +149,13 @@ bool CSignatureValidator::VerifyEmbeddedSignature(_In_ LPCWSTR pwszSourceFile)
     case TRUST_E_EXPLICIT_DISTRUST:
         // The hash that represents the subject or the publisher
         // is not allowed by the admin or user.
-        CLogging::LogError(_T("The signature is present, but specifically disallowed."));
+        //CLogging::LogError(_T("The signature is present, but specifically disallowed."));
         result = false;
         break;
 
     case TRUST_E_SUBJECT_NOT_TRUSTED:
         // The user clicked "No" when asked to install and run.
-        CLogging::LogError(_T("The signature is present, but not trusted."));
+        //CLogging::LogError(_T("The signature is present, but not trusted."));
         result = false;
         break;
 
@@ -167,12 +166,6 @@ bool CSignatureValidator::VerifyEmbeddedSignature(_In_ LPCWSTR pwszSourceFile)
         admin policy has disabled user trust. No signature,
         publisher or time stamp errors.
         */
-        CLogging::LogError(
-            L"CRYPT_E_SECURITY_SETTINGS - The hash "
-            L"representing the subject or the publisher wasn't "
-            L"explicitly trusted by the admin and admin policy "
-            L"has disabled user trust. No signature, publisher "
-            L"or timestamp errors.");
         result = false;
         break;
 
@@ -180,7 +173,7 @@ bool CSignatureValidator::VerifyEmbeddedSignature(_In_ LPCWSTR pwszSourceFile)
         // The UI was disabled in dwUIChoice or the admin policy
         // has disabled user trust. lStatus contains the
         // publisher or time stamp chain error.
-        CLogging::LogError(_T("Error is: 0x%x.\n"), lStatus);
+        //CLogging::LogError(_T("Error is: 0x%x.\n"), lStatus);
         result = false;
         break;
     }

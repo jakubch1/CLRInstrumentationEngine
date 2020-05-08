@@ -16,7 +16,7 @@ HRESULT MicrosoftInstrumentationEngine::CExceptionClause::InitializeFromSmall(
     )
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CExceptionClause::InitializeFromSmall"));
+    ////CLogging::LogMessage(_T("Starting CExceptionClause::InitializeFromSmall"));
 
 #ifndef _WIN64
     m_flags = pSmallClause->Flags;
@@ -42,7 +42,7 @@ HRESULT MicrosoftInstrumentationEngine::CExceptionClause::InitializeFromSmall(
         IfFailRet(pInstructionGraph->GetInstructionAtOffset(pSmallClause->FilterOffset, &m_pFilterFirstInstruction));
     }
 
-    CLogging::LogMessage(_T("End CExceptionClause::InitializeFromSmall"));
+    ////CLogging::LogMessage(_T("End CExceptionClause::InitializeFromSmall"));
 
     return hr;
 }
@@ -53,7 +53,7 @@ HRESULT MicrosoftInstrumentationEngine::CExceptionClause::InitializeFromFat(
     )
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CExceptionClause::InitializeFromFat"));
+    ////CLogging::LogMessage(_T("Starting CExceptionClause::InitializeFromFat"));
 
     m_flags = pFatClause->Flags;
 
@@ -75,7 +75,7 @@ HRESULT MicrosoftInstrumentationEngine::CExceptionClause::InitializeFromFat(
         IfFailRet(pInstructionGraph->GetInstructionAtOffset(pFatClause->FilterOffset, &m_pFilterFirstInstruction));
     }
 
-    CLogging::LogMessage(_T("End CExceptionClause::InitializeFromSmall"));
+    ////CLogging::LogMessage(_T("End CExceptionClause::InitializeFromSmall"));
 
     return hr;
 }
@@ -83,7 +83,7 @@ HRESULT MicrosoftInstrumentationEngine::CExceptionClause::InitializeFromFat(
 HRESULT MicrosoftInstrumentationEngine::CExceptionClause::RenderExceptionClause(_In_ IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT* pEHClause)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CExceptionClause::RenderExceptionClause"));
+    ////CLogging::LogMessage(_T("Starting CExceptionClause::RenderExceptionClause"));
     IfNullRetPointer(pEHClause);
 
     IfNullRet(m_pTryFirstInstruction);
@@ -122,7 +122,7 @@ HRESULT MicrosoftInstrumentationEngine::CExceptionClause::RenderExceptionClause(
         IfFailRet(m_pFilterFirstInstruction->GetOffset(&pEHClause->FilterOffset));
     }
 
-    CLogging::LogMessage(_T("End CExceptionClause::RenderExceptionClause"));
+    ////CLogging::LogMessage(_T("End CExceptionClause::RenderExceptionClause"));
 
     return hr;
 }
@@ -132,7 +132,7 @@ HRESULT MicrosoftInstrumentationEngine::CExceptionClause::UpdateInstruction(_In_
 {
     HRESULT hr = S_OK;
 
-    CLogging::LogMessage(_T("Starting CExceptionClause::UpdateInstruction"));
+    ////CLogging::LogMessage(_T("Starting CExceptionClause::UpdateInstruction"));
     IfNullRetPointer(pInstructionOld);
 
     // This function is to update the exception clause range for InsertBefore, Remove and Replace instructions.
@@ -175,7 +175,7 @@ HRESULT MicrosoftInstrumentationEngine::CExceptionClause::UpdateInstruction(_In_
         m_pFilterFirstInstruction = pInstructionNew;
     }
 
-    CLogging::LogMessage(_T("End CExceptionClause::UpdateInstruction"));
+    ////CLogging::LogMessage(_T("End CExceptionClause::UpdateInstruction"));
 
     return hr;
 }
@@ -183,19 +183,19 @@ HRESULT MicrosoftInstrumentationEngine::CExceptionClause::UpdateInstruction(_In_
 HRESULT MicrosoftInstrumentationEngine::CExceptionClause::GetFlags(_Out_ DWORD* pFlags)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CExceptionClause::GetFlags"));
+    ////CLogging::LogMessage(_T("Starting CExceptionClause::GetFlags"));
     IfNullRetPointer(pFlags);
 
     *pFlags = m_flags;
 
-    CLogging::LogMessage(_T("End CExceptionClause::GetFlags"));
+    ////CLogging::LogMessage(_T("End CExceptionClause::GetFlags"));
     return hr;
 }
 
 HRESULT MicrosoftInstrumentationEngine::CExceptionClause::GetTryFirstInstruction(_Out_ IInstruction** ppInstruction)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CExceptionClause::GetTryFirstInstruction"));
+    ////CLogging::LogMessage(_T("Starting CExceptionClause::GetTryFirstInstruction"));
     IfNullRetPointer(ppInstruction);
     *ppInstruction = NULL;
 
@@ -205,14 +205,14 @@ HRESULT MicrosoftInstrumentationEngine::CExceptionClause::GetTryFirstInstruction
         (*ppInstruction)->AddRef();
     }
 
-    CLogging::LogMessage(_T("End CExceptionClause::GetTryFirstInstruction"));
+    ////CLogging::LogMessage(_T("End CExceptionClause::GetTryFirstInstruction"));
     return hr;
 }
 
 HRESULT MicrosoftInstrumentationEngine::CExceptionClause::GetTryLastInstruction(_Out_ IInstruction** ppInstruction)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CExceptionClause::GetTryLastInstruction"));
+    ////CLogging::LogMessage(_T("Starting CExceptionClause::GetTryLastInstruction"));
     IfNullRetPointer(ppInstruction);
     *ppInstruction = NULL;
 
@@ -222,14 +222,14 @@ HRESULT MicrosoftInstrumentationEngine::CExceptionClause::GetTryLastInstruction(
         (*ppInstruction)->AddRef();
     }
 
-    CLogging::LogMessage(_T("End CExceptionClause::GetTryLastInstruction"));
+    ////CLogging::LogMessage(_T("End CExceptionClause::GetTryLastInstruction"));
     return hr;
 }
 
 HRESULT MicrosoftInstrumentationEngine::CExceptionClause::GetHandlerFirstInstruction(_Out_ IInstruction** ppInstruction)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CExceptionClause::GetHandlerFirstInstruction"));
+    ////CLogging::LogMessage(_T("Starting CExceptionClause::GetHandlerFirstInstruction"));
     IfNullRetPointer(ppInstruction);
     *ppInstruction = NULL;
 
@@ -239,14 +239,14 @@ HRESULT MicrosoftInstrumentationEngine::CExceptionClause::GetHandlerFirstInstruc
         (*ppInstruction)->AddRef();
     }
 
-    CLogging::LogMessage(_T("End CExceptionClause::GetHandlerFirstInstruction"));
+    ////CLogging::LogMessage(_T("End CExceptionClause::GetHandlerFirstInstruction"));
     return hr;
 }
 
 HRESULT MicrosoftInstrumentationEngine::CExceptionClause::GetHandlerLastInstruction(_Out_ IInstruction** ppInstruction)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CExceptionClause::GetHandlerLastInstruction"));
+    ////CLogging::LogMessage(_T("Starting CExceptionClause::GetHandlerLastInstruction"));
     IfNullRetPointer(ppInstruction);
     *ppInstruction = NULL;
 
@@ -256,14 +256,14 @@ HRESULT MicrosoftInstrumentationEngine::CExceptionClause::GetHandlerLastInstruct
         (*ppInstruction)->AddRef();
     }
 
-    CLogging::LogMessage(_T("End CExceptionClause::GetHandlerLastInstruction"));
+    ////CLogging::LogMessage(_T("End CExceptionClause::GetHandlerLastInstruction"));
     return hr;
 }
 
 HRESULT MicrosoftInstrumentationEngine::CExceptionClause::GetFilterFirstInstruction(_Out_ IInstruction** ppInstruction)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CExceptionClause::GetFilterFirstInstruction"));
+    ////CLogging::LogMessage(_T("Starting CExceptionClause::GetFilterFirstInstruction"));
     IfNullRetPointer(ppInstruction);
     *ppInstruction = NULL;
 
@@ -273,7 +273,7 @@ HRESULT MicrosoftInstrumentationEngine::CExceptionClause::GetFilterFirstInstruct
         (*ppInstruction)->AddRef();
     }
 
-    CLogging::LogMessage(_T("End CExceptionClause::GetFilterFirstInstruction"));
+    ////CLogging::LogMessage(_T("End CExceptionClause::GetFilterFirstInstruction"));
     return hr;
 }
 
@@ -281,12 +281,12 @@ HRESULT MicrosoftInstrumentationEngine::CExceptionClause::GetFilterFirstInstruct
 HRESULT MicrosoftInstrumentationEngine::CExceptionClause::GetExceptionHandlerType(_Out_ mdToken* pToken)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CExceptionClause::GetExceptionHandlerType"));
+    ////CLogging::LogMessage(_T("Starting CExceptionClause::GetExceptionHandlerType"));
     IfNullRetPointer(pToken);
 
     *pToken = m_ExceptionHandlerType;
 
-    CLogging::LogMessage(_T("End CExceptionClause::GetExceptionHandlerType"));
+    ////CLogging::LogMessage(_T("End CExceptionClause::GetExceptionHandlerType"));
     return hr;
 }
 
@@ -295,66 +295,66 @@ HRESULT MicrosoftInstrumentationEngine::CExceptionClause::GetExceptionHandlerTyp
 HRESULT MicrosoftInstrumentationEngine::CExceptionClause::SetFlags(_In_ DWORD flags)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CExceptionClause::SetFlags"));
+    ////CLogging::LogMessage(_T("Starting CExceptionClause::SetFlags"));
 
     m_flags = (CorExceptionFlag)flags;
 
-    CLogging::LogMessage(_T("End CExceptionClause::SetFlags"));
+    ////CLogging::LogMessage(_T("End CExceptionClause::SetFlags"));
     return hr;
 }
 
 HRESULT MicrosoftInstrumentationEngine::CExceptionClause::SetTryFirstInstruction(_In_ IInstruction* pInstruction)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CExceptionClause::SetTryFirstInstruction"));
+    ////CLogging::LogMessage(_T("Starting CExceptionClause::SetTryFirstInstruction"));
 
     m_pTryFirstInstruction = (CInstruction*)pInstruction;
 
-    CLogging::LogMessage(_T("End CExceptionClause::SetTryFirstInstruction"));
+    ////CLogging::LogMessage(_T("End CExceptionClause::SetTryFirstInstruction"));
     return hr;
 }
 
 HRESULT MicrosoftInstrumentationEngine::CExceptionClause::SetTryLastInstruction(_In_ IInstruction* pInstruction)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CExceptionClause::SetTryLastInstruction"));
+    ////CLogging::LogMessage(_T("Starting CExceptionClause::SetTryLastInstruction"));
 
     m_pTryLastInstruction = (CInstruction*)pInstruction;
 
-    CLogging::LogMessage(_T("End CExceptionClause::SetTryLastInstruction"));
+    ////CLogging::LogMessage(_T("End CExceptionClause::SetTryLastInstruction"));
     return hr;
 }
 
 HRESULT MicrosoftInstrumentationEngine::CExceptionClause::SetHandlerFirstInstruction(_In_ IInstruction* pInstruction)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CExceptionClause::SetHandlerFirstInstruction"));
+    ////CLogging::LogMessage(_T("Starting CExceptionClause::SetHandlerFirstInstruction"));
 
     m_pHandlerFirstInstruction = (CInstruction*)pInstruction;
 
-    CLogging::LogMessage(_T("End CExceptionClause::SetHandlerFirstInstruction"));
+    ////CLogging::LogMessage(_T("End CExceptionClause::SetHandlerFirstInstruction"));
     return hr;
 }
 
 HRESULT MicrosoftInstrumentationEngine::CExceptionClause::SetHandlerLastInstruction(_In_ IInstruction* pInstruction)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CExceptionClause::SetHandlerLastInstruction"));
+    ////CLogging::LogMessage(_T("Starting CExceptionClause::SetHandlerLastInstruction"));
 
     m_pHandlerLastInstruction = (CInstruction*)pInstruction;
 
-    CLogging::LogMessage(_T("End CExceptionClause::SetHandlerLastInstruction"));
+    ////CLogging::LogMessage(_T("End CExceptionClause::SetHandlerLastInstruction"));
     return hr;
 }
 
 HRESULT MicrosoftInstrumentationEngine::CExceptionClause::SetFilterFirstInstruction(_In_ IInstruction* pInstruction)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CExceptionClause::SetFilterFirstInstruction"));
+    ////CLogging::LogMessage(_T("Starting CExceptionClause::SetFilterFirstInstruction"));
 
     m_pFilterFirstInstruction = (CInstruction*)pInstruction;
 
-    CLogging::LogMessage(_T("End CExceptionClause::SetFilterFirstInstruction"));
+    ////CLogging::LogMessage(_T("End CExceptionClause::SetFilterFirstInstruction"));
     return hr;
 }
 
@@ -362,10 +362,10 @@ HRESULT MicrosoftInstrumentationEngine::CExceptionClause::SetFilterFirstInstruct
 HRESULT MicrosoftInstrumentationEngine::CExceptionClause::SetExceptionHandlerType(_In_ mdToken token)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CExceptionClause::SetExceptionHandlerType"));
+    ////CLogging::LogMessage(_T("Starting CExceptionClause::SetExceptionHandlerType"));
 
     m_ExceptionHandlerType = token;
 
-    CLogging::LogMessage(_T("End CExceptionClause::SetExceptionHandlerType"));
+    ////CLogging::LogMessage(_T("End CExceptionClause::SetExceptionHandlerType"));
     return hr;
 }

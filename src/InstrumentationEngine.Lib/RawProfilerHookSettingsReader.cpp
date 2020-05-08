@@ -27,22 +27,22 @@ namespace MicrosoftInstrumentationEngine
 
         std::wstring strRawProfilerHookClsid;
 
-        CLogging::LogMessage(_T("Examining environment variable: %s"), cszRawProfilerHookVariableName);
+        //CLogging::LogMessage(_T("Examining environment variable: %s"), cszRawProfilerHookVariableName);
 
         IfFailRet(GetEnvironmentVariable(cszRawProfilerHookVariableName, strRawProfilerHookClsid));
         if (S_FALSE == hr)
         {
-            CLogging::LogMessage(_T("RawProfilerHookComponent is not set"));
+            //CLogging::LogMessage(_T("RawProfilerHookComponent is not set"));
             return hr;
         }
 
         IfFalseRet(strRawProfilerHookClsid.size() > 0, HRESULT_FROM_WIN32(ERROR_ENVVAR_NOT_FOUND));
 
-        CLogging::LogMessage(_T("RawProfilerHookComponent specified, CLSID = %s"), strRawProfilerHookClsid);
+        //CLogging::LogMessage(_T("RawProfilerHookComponent specified, CLSID = %s"), strRawProfilerHookClsid);
 
         IfFailRet(CLSIDFromString(strRawProfilerHookClsid.c_str(), &clsidRawProfilerHookComponent));
 
-        CLogging::LogMessage(_T("Examining environment variable: %s"), cszRawProfilerHookPathVariableName);
+        //CLogging::LogMessage(_T("Examining environment variable: %s"), cszRawProfilerHookPathVariableName);
 
         IfFailRet(GetEnvironmentVariable(cszRawProfilerHookPathVariableName, strRawProfilerHookModulePath));
 
@@ -50,12 +50,12 @@ namespace MicrosoftInstrumentationEngine
         //    MicrosoftInstrumentationEngine_RawProfilerHookPath
         if (S_FALSE == hr)
         {
-            CLogging::LogMessage(_T("Examining environment variable: %s"), cszRawProfilerHookPathVariableNameNoBitness);
+            //CLogging::LogMessage(_T("Examining environment variable: %s"), cszRawProfilerHookPathVariableNameNoBitness);
 
             IfFailRet(GetEnvironmentVariable(cszRawProfilerHookPathVariableNameNoBitness, strRawProfilerHookModulePath));
         }
 
-        CLogging::LogMessage(_T("RawProfilerHookModulePath specified, path = %s"), strRawProfilerHookModulePath);
+        //CLogging::LogMessage(_T("RawProfilerHookModulePath specified, path = %s"), strRawProfilerHookModulePath);
 
         // if cszRawProfilerHookPathVariableName and cszRawProfilerHookPathVariableNameNoBitness are not set then we consider it as error;
         // there's no path to the component module to load

@@ -442,7 +442,7 @@ HRESULT MicrosoftInstrumentationEngine::CCorProfilerInfoWrapper::SetILFunctionBo
         {
             if (m_pMethodMalloc == nullptr)
             {
-                CLogging::LogError(_T("Incorrect buffer passed to SetFunctionBodyMalloc"));
+                //CLogging::LogError(_T("Incorrect buffer passed to SetFunctionBodyMalloc"));
                 return E_FAIL;
             }
             BYTE* pBuffer;
@@ -451,7 +451,7 @@ HRESULT MicrosoftInstrumentationEngine::CCorProfilerInfoWrapper::SetILFunctionBo
 
             if (pbNewILMethodHeader != pBuffer)
             {
-                CLogging::LogError(_T("Incorrect buffer passed to SetFunctionBodyMalloc"));
+                //CLogging::LogError(_T("Incorrect buffer passed to SetFunctionBodyMalloc"));
                 return E_FAIL;
             }
 

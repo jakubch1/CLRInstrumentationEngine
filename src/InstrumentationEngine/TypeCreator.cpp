@@ -24,7 +24,7 @@ HRESULT MicrosoftInstrumentationEngine::CTypeCreator::FromCorElement(_In_ CorEle
     IfNullRetPointer(ppType);
     *ppType = nullptr;
 
-    CLogging::LogMessage(_T("Starting CTypeCreator::FromCorElement"));
+    //CLogging::LogMessage(_T("Starting CTypeCreator::FromCorElement"));
 
     switch (type)
     {
@@ -57,13 +57,13 @@ HRESULT MicrosoftInstrumentationEngine::CTypeCreator::FromCorElement(_In_ CorEle
         }
     }
 
-    CLogging::LogMessage(_T("End CTypeCreator::FromCorElement"));
+    //CLogging::LogMessage(_T("End CTypeCreator::FromCorElement"));
 
     return E_NOTIMPL;
 }
 HRESULT MicrosoftInstrumentationEngine::CTypeCreator::FromSignature(_In_ DWORD cbBuffer, _In_ const BYTE* pCorSignature, _Out_ IType ** ppType, _Out_opt_ DWORD* pdwSigSize)
 {
-    CLogging::LogMessage(_T("Starting CTypeCreator::FromSignature"));
+    //CLogging::LogMessage(_T("Starting CTypeCreator::FromSignature"));
 
     IfNullRetPointer(pCorSignature);
     IfNullRetPointer(pdwSigSize);
@@ -310,7 +310,7 @@ HRESULT MicrosoftInstrumentationEngine::CTypeCreator::FromSignature(_In_ DWORD c
         }
         break;
     default:
-        CLogging::LogError(_T("Unexpected element type %d. This usually indicates a signature parsing bug"), sigElement);
+        //CLogging::LogError(_T("Unexpected element type %d. This usually indicates a signature parsing bug"), sigElement);
         return E_NOTIMPL;
     }
 
@@ -322,11 +322,11 @@ HRESULT MicrosoftInstrumentationEngine::CTypeCreator::FromSignature(_In_ DWORD c
     }
     else
     {
-        CLogging::LogError(_T("Type %d is not yet supported"), sigElement);
+        //CLogging::LogError(_T("Type %d is not yet supported"), sigElement);
         hr = E_FAIL;
     }
 
-    CLogging::LogMessage(_T("End CTypeCreator::FromSignature"));
+    //CLogging::LogMessage(_T("End CTypeCreator::FromSignature"));
     return hr;
 }
 
@@ -434,7 +434,7 @@ HRESULT MicrosoftInstrumentationEngine::CTypeCreator::ParseMethodSignature(
         (callingConvention == IMAGE_CEE_CS_CALLCONV_LOCAL_SIG) ||
         (callingConvention == IMAGE_CEE_CS_CALLCONV_PROPERTY))
     {
-        CLogging::LogError(_T("Unexpected calling convention on method signature."));
+        //CLogging::LogError(_T("Unexpected calling convention on method signature."));
         return E_UNEXPECTED;
     }
     IfFailRet(cbSignature > cbRead ? S_OK : E_UNEXPECTED);
@@ -522,7 +522,7 @@ HRESULT MicrosoftInstrumentationEngine::CTypeCreator::ParseLocalVarSignature(
     cbRead = CorSigUncompressData(pSignature, &callingConvention);
     if (callingConvention != IMAGE_CEE_CS_CALLCONV_LOCAL_SIG)
     {
-        CLogging::LogError(_T("Unexpected calling convention on local variable signature."));
+        //CLogging::LogError(_T("Unexpected calling convention on local variable signature."));
         return E_UNEXPECTED;
     }
     IfFailRet(cbSignature > cbRead ? S_OK : E_UNEXPECTED);

@@ -18,7 +18,7 @@ PVOID MicrosoftInstrumentationEngine::CCorMethodMalloc::Alloc(_In_ ULONG cb)
     m_pBuffer.Allocate(cb);
     if (m_pBuffer == nullptr)
     {
-        CLogging::LogError(_T("CCorMethodMalloc::Alloc failed"));
+        //CLogging::LogError(_T("CCorMethodMalloc::Alloc failed"));
         return NULL;
     }
     m_cbBufferLen = cb;

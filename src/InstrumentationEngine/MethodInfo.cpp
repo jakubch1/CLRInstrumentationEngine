@@ -78,7 +78,7 @@ MicrosoftInstrumentationEngine::CMethodInfo::~CMethodInfo()
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::Initialize(_In_ bool bAddToMethodInfoMap, _In_ bool isRejit)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::Initialize"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::Initialize"));
 
     // Do the minimum required amount of initialization.
     // The rest is deferred until needed
@@ -93,7 +93,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::Initialize(_In_ bool bAddTo
     {
         if (m_functionId != 0)
         {
-            CLogging::LogError(_T("CMethodInfo::Initialize - expected function id of 0 for rejitted method."));
+            ////CLogging::LogError(_T("CMethodInfo::Initialize - expected function id of 0 for rejitted method."));
         }
 
         IfFailRet(m_pModuleInfo->IncrementMethodRejitCount(m_tkFunction));
@@ -108,7 +108,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::Initialize(_In_ bool bAddTo
         m_bIsStandaloneMethodInfo = true;
     }
 
-    CLogging::LogMessage(_T("End CMethodInfo::Initialize"));
+    ////CLogging::LogMessage(_T("End CMethodInfo::Initialize"));
     return S_OK;
 }
 
@@ -129,42 +129,42 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::Cleanup()
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetModuleInfo(_Out_ IModuleInfo** ppModuleInfo)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::GetModuleInfo"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::GetModuleInfo"));
     IfNullRetPointer(ppModuleInfo);
     *ppModuleInfo = nullptr;
 
     *ppModuleInfo = (IModuleInfo*)m_pModuleInfo;
     (*ppModuleInfo)->AddRef();
 
-    CLogging::LogMessage(_T("End CMethodInfo::GetModuleInfo"));
+    ////CLogging::LogMessage(_T("End CMethodInfo::GetModuleInfo"));
     return hr;
 }
 
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetName(_Out_ BSTR* pbstrName)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::GetName"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::GetName"));
     IfNullRetPointer(pbstrName);
 
     IfFailRet(InitializeName(m_tkFunction));
 
     hr = m_bstrMethodName.CopyTo(pbstrName);
 
-    CLogging::LogMessage(_T("End CMethodInfo::GetName"));
+    ////CLogging::LogMessage(_T("End CMethodInfo::GetName"));
     return hr;
 }
 
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetFullName(_Out_ BSTR* pbstrFullName)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::GetFullName"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::GetFullName"));
     IfNullRetPointer(pbstrFullName);
 
     IfFailRet(InitializeFullName());
 
     hr = m_bstrMethodFullName.CopyTo(pbstrFullName);
 
-    CLogging::LogMessage(_T("End CMethodInfo::GetFullName"));
+    ////CLogging::LogMessage(_T("End CMethodInfo::GetFullName"));
     return hr;
 }
 
@@ -260,7 +260,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::InitializeMethodSignature(_
     {
         if (m_cbSigBlob != sizeUsed)
         {
-            CLogging::LogError(_T("Failed to parse entire signature. Expected %d actual %d"), m_cbSigBlob, sizeUsed);
+            ////CLogging::LogError(_T("Failed to parse entire signature. Expected %d actual %d"), m_cbSigBlob, sizeUsed);
         }
 
         ULONG cTypes;
@@ -285,7 +285,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::InitializeMethodSignature(_
     }
     else
     {
-        CLogging::LogError(_T("Failed to parse methodsignature for %s with error code %x"), m_bstrMethodFullName.m_str, hr);
+        ////CLogging::LogError(_T("Failed to parse methodsignature for %s with error code %x"), m_bstrMethodFullName.m_str, hr);
     }
 
     return hr;
@@ -340,7 +340,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::InitializeCorAttributes(_In
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::ApplyIntermediateMethodInstrumentation()
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::ApplyIntermediateMethodInstrumentation"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::ApplyIntermediateMethodInstrumentation"));
 
     if (m_pInstructionGraph == NULL)
     {
@@ -362,7 +362,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::ApplyIntermediateMethodInst
 
     m_bIsInstrumented = true;
 
-    CLogging::LogMessage(_T("End CMethodInfo::ApplyIntermediateMethodInstrumentation"));
+    ////CLogging::LogMessage(_T("End CMethodInfo::ApplyIntermediateMethodInstrumentation"));
     return hr;
 }
 
@@ -374,7 +374,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::CreateILFunctionBody()
 
     if (m_pIntermediateRenderedMethod != nullptr)
     {
-        CLogging::LogError(_T("CMethodInfo::CreateILFunctionBody - intermediate method body has already been set."));
+        ////CLogging::LogError(_T("CMethodInfo::CreateILFunctionBody - intermediate method body has already been set."));
         return E_FAIL;
     }
 
@@ -456,7 +456,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetInstructions(_Out_ IInst
 {
     HRESULT hr = S_OK;
 
-    CLogging::LogMessage(_T("Starting CMethodInfo::GetInstructions"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::GetInstructions"));
 
     if (m_bIsStandaloneMethodInfo)
     {
@@ -464,7 +464,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetInstructions(_Out_ IInst
         // This is because a jit can be occurring at the the same time which would result in the instruction graph being wrong.
         // The current use of stanalone method infos is during the exception callbacks when instrumentation wouldn't be allowed anyway.
         // NOTE: Current tests examine the instruction graph however, so don't fail the method.
-        CLogging::LogError(_T("CMethodInfo::GetInstructions - standalone method infos are not configured properly for instrumentation."));
+        ////CLogging::LogError(_T("CMethodInfo::GetInstructions - standalone method infos are not configured properly for instrumentation."));
     }
 
     if (m_pInstructionGraph == NULL)
@@ -475,7 +475,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetInstructions(_Out_ IInst
     *ppInstructionGraph = m_pInstructionGraph;
     (*ppInstructionGraph)->AddRef();
 
-    CLogging::LogMessage(_T("End CMethodInfo::GetInstructions"));
+    ////CLogging::LogMessage(_T("End CMethodInfo::GetInstructions"));
 
     return hr;
 }
@@ -546,7 +546,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::InitializeInstructionsAndEx
         return S_OK;
     }
 
-    CLogging::LogMessage(_T("CMethodInfo::InitializeInstructionsAndExceptions - Initializing Instruction Graph"));
+    ////CLogging::LogMessage(_T("CMethodInfo::InitializeInstructionsAndExceptions - Initializing Instruction Graph"));
 
     // Lazily init the instruction graph when it is asked for.
     m_pInstructionGraph.Attach(new CInstructionGraph());
@@ -639,48 +639,48 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetOriginalLocalVariables(_
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetClassId(_Out_ ClassID* pClassId)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::GetClassId"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::GetClassId"));
     IfNullRetPointer(pClassId);
 
     if (m_classId == 0)
     {
-        CLogging::LogError(_T("CMethodInfo::GetClassId - Class id is not available during a rejit."));
+        ////CLogging::LogError(_T("CMethodInfo::GetClassId - Class id is not available during a rejit."));
         return E_FAIL;
     }
 
     *pClassId = m_classId;
 
-    CLogging::LogMessage(_T("End CMethodInfo::GetClassId"));
+    ////CLogging::LogMessage(_T("End CMethodInfo::GetClassId"));
     return hr;
 }
 
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetFunctionId(_Out_ FunctionID* pFunctionID)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::GetFunctionId"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::GetFunctionId"));
     IfNullRetPointer(pFunctionID);
 
     if (m_functionId == 0)
     {
-        CLogging::LogError(_T("CMethodInfo::GetFunctionId - FunctionID is not available during a rejit."));
+        ////CLogging::LogError(_T("CMethodInfo::GetFunctionId - FunctionID is not available during a rejit."));
         return E_FAIL;
     }
 
     *pFunctionID = m_functionId;
 
-    CLogging::LogMessage(_T("End CMethodInfo::GetFunctionId"));
+    ////CLogging::LogMessage(_T("End CMethodInfo::GetFunctionId"));
     return hr;
 }
 
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetMethodToken(_Out_ mdToken* pToken)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::GetMethodDefToken"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::GetMethodDefToken"));
     IfNullRetPointer(pToken);
 
     *pToken = m_tkFunction;
 
-    CLogging::LogMessage(_T("End CMethodInfo::GetMethodDefToken"));
+    ////CLogging::LogMessage(_T("End CMethodInfo::GetMethodDefToken"));
     return hr;
 }
 
@@ -697,7 +697,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetGenericParameterCount(_O
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIsStatic(_Out_ BOOL* pbValue)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::GetIsStatic"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::GetIsStatic"));
 
     IfNullRetPointer(pbValue);
 
@@ -705,7 +705,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIsStatic(_Out_ BOOL* pbV
 
     *pbValue = IsFlagSet(m_methodAttr, mdStatic);
 
-    CLogging::LogMessage(_T("End CMethodInfo::GetIsStatic %04x"), *pbValue);
+    ////CLogging::LogMessage(_T("End CMethodInfo::GetIsStatic %04x"), *pbValue);
 
     return hr;
 }
@@ -713,7 +713,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIsStatic(_Out_ BOOL* pbV
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIsPublic(_Out_ BOOL* pbValue)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::GetIsPublic"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::GetIsPublic"));
 
     IfNullRetPointer(pbValue);
 
@@ -721,7 +721,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIsPublic(_Out_ BOOL* pbV
 
     *pbValue = IsFlagSet(m_methodAttr, mdPublic);
 
-    CLogging::LogMessage(_T("End CMethodInfo::GetIsPublic %04x"), *pbValue);
+    ////CLogging::LogMessage(_T("End CMethodInfo::GetIsPublic %04x"), *pbValue);
 
     return hr;
 }
@@ -729,7 +729,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIsPublic(_Out_ BOOL* pbV
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIsPrivate(_Out_ BOOL* pbValue)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::GetIsPrivate"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::GetIsPrivate"));
 
     IfNullRetPointer(pbValue);
 
@@ -737,7 +737,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIsPrivate(_Out_ BOOL* pb
 
     *pbValue = IsFlagSet(m_methodAttr, mdPrivate);
 
-    CLogging::LogMessage(_T("End CMethodInfo::GetIsPrivate %04x"), *pbValue);
+    ////CLogging::LogMessage(_T("End CMethodInfo::GetIsPrivate %04x"), *pbValue);
 
     return hr;
 }
@@ -745,7 +745,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIsPrivate(_Out_ BOOL* pb
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIsPropertyGetter(_Out_ BOOL* pbValue)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::GetIsPropertyGetter"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::GetIsPropertyGetter"));
 
     IfNullRetPointer(pbValue);
 
@@ -764,7 +764,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIsPropertyGetter(_Out_ B
         *pbValue = FALSE;
     }
 
-    CLogging::LogMessage(_T("End CMethodInfo::GetIsPropertyGetter %04x"), *pbValue);
+    ////CLogging::LogMessage(_T("End CMethodInfo::GetIsPropertyGetter %04x"), *pbValue);
 
     return hr;
 }
@@ -772,7 +772,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIsPropertyGetter(_Out_ B
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIsPropertySetter(_Out_ BOOL* pbValue)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::GetIsPropertySetter"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::GetIsPropertySetter"));
 
     IfNullRetPointer(pbValue);
 
@@ -791,7 +791,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIsPropertySetter(_Out_ B
         *pbValue = FALSE;
     }
 
-    CLogging::LogMessage(_T("End CMethodInfo::GetIsPropertySetter %04x"), *pbValue);
+    ////CLogging::LogMessage(_T("End CMethodInfo::GetIsPropertySetter %04x"), *pbValue);
 
     return hr;
 }
@@ -799,7 +799,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIsPropertySetter(_Out_ B
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIsFinalizer(_Out_ BOOL* pbValue)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::GetIsFinalizer"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::GetIsFinalizer"));
 
     IfNullRetPointer(pbValue);
 
@@ -818,7 +818,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIsFinalizer(_Out_ BOOL* 
         *pbValue = FALSE;
     }
 
-    CLogging::LogMessage(_T("End CMethodInfo::GetIsFinalizer %04x"), *pbValue);
+    ////CLogging::LogMessage(_T("End CMethodInfo::GetIsFinalizer %04x"), *pbValue);
 
     return hr;
 }
@@ -826,7 +826,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIsFinalizer(_Out_ BOOL* 
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIsConstructor(_Out_ BOOL* pbValue)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::GetIsConstructor"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::GetIsConstructor"));
 
     IfNullRetPointer(pbValue);
 
@@ -845,7 +845,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIsConstructor(_Out_ BOOL
         *pbValue = FALSE;
     }
 
-    CLogging::LogMessage(_T("End CMethodInfo::GetIsConstructor %04x"), *pbValue);
+    ////CLogging::LogMessage(_T("End CMethodInfo::GetIsConstructor %04x"), *pbValue);
 
     return hr;
 }
@@ -853,7 +853,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIsConstructor(_Out_ BOOL
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIsStaticConstructor(_Out_ BOOL* pbValue)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::GetIsStaticConstructor"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::GetIsStaticConstructor"));
 
     IfNullRetPointer(pbValue);
 
@@ -872,7 +872,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIsStaticConstructor(_Out
         *pbValue = FALSE;
     }
 
-    CLogging::LogMessage(_T("End CMethodInfo::GetIsStaticConstructor %04x"), *pbValue);
+    ////CLogging::LogMessage(_T("End CMethodInfo::GetIsStaticConstructor %04x"), *pbValue);
 
     return hr;
 }
@@ -902,7 +902,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetParameters(_Out_ IEnumMe
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetDeclaringType(_Out_ IType** ppType)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::GetDeclaringType"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::GetDeclaringType"));
 
     InitializeFullName();
 
@@ -910,7 +910,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetDeclaringType(_Out_ ITyp
 
     hr = m_pDeclaringType.CopyTo(ppType);
 
-    CLogging::LogMessage(_T("End CMethodInfo::GetDeclaringType"));
+    ////CLogging::LogMessage(_T("End CMethodInfo::GetDeclaringType"));
 
     return hr;
 }
@@ -918,7 +918,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetDeclaringType(_Out_ ITyp
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetReturnType(_Out_ IType** ppType)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::GetReturnType"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::GetReturnType"));
 
     IfNullRetPointer(ppType);
 
@@ -926,7 +926,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetReturnType(_Out_ IType**
 
     hr = m_pReturnType.CopyTo(ppType);
 
-    CLogging::LogMessage(_T("End CMethodInfo::GetReturnType"));
+    ////CLogging::LogMessage(_T("End CMethodInfo::GetReturnType"));
 
     return hr;
 }
@@ -935,7 +935,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetReturnType(_Out_ IType**
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetCorSignature(_In_ DWORD cbBuffer, _Out_opt_ BYTE* pCorSignature, _Out_ DWORD* pcbSignature)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::GetCorSignature"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::GetCorSignature"));
     IfNullRetPointer(pcbSignature);
 
     IfFailRet(InitializeMethodSignature(m_tkFunction));
@@ -951,12 +951,12 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetCorSignature(_In_ DWORD 
         }
         else
         {
-            CLogging::LogError(_T("End CMethodInfo::GetCorSignature"));
+            ////CLogging::LogError(_T("End CMethodInfo::GetCorSignature"));
             return E_FAIL;
         }
     }
 
-    CLogging::LogMessage(_T("End CMethodInfo::GetCorSignature"));
+    ////CLogging::LogMessage(_T("End CMethodInfo::GetCorSignature"));
 
     return S_FALSE;
 }
@@ -964,14 +964,14 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetCorSignature(_In_ DWORD 
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetLocalVarSigToken(_Out_ mdToken* pToken)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::GetLocalVarSigToken"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::GetLocalVarSigToken"));
     IfNullRetPointer(pToken);
 
     IfFailRet(InitializeHeader());
 
     *pToken = m_newCorHeader.LocalVarSigTok;
 
-    CLogging::LogMessage(_T("End CMethodInfo::GetLocalVarSigToken"));
+    ////CLogging::LogMessage(_T("End CMethodInfo::GetLocalVarSigToken"));
 
     return hr;
 }
@@ -979,13 +979,13 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetLocalVarSigToken(_Out_ m
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::SetLocalVarSigToken(_In_ mdToken token)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::SetLocalVarSigToken"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::SetLocalVarSigToken"));
 
     IfFailRet(InitializeHeader());
 
     m_newCorHeader.LocalVarSigTok = token;
 
-    CLogging::LogMessage(_T("End CMethodInfo::SetLocalVarSigToken"));
+    ////CLogging::LogMessage(_T("End CMethodInfo::SetLocalVarSigToken"));
 
     return S_OK;
 }
@@ -993,14 +993,14 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::SetLocalVarSigToken(_In_ md
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetAttributes(_Out_ /*CorMethodAttr*/ DWORD* pCorMethodAttr)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::GetAttributes"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::GetAttributes"));
     IfNullRetPointer(pCorMethodAttr);
 
     IfFailRet(InitializeCorAttributes(m_tkFunction));
 
     *pCorMethodAttr = m_methodAttr;
 
-    CLogging::LogMessage(_T("End CMethodInfo::GetAttributes"));
+    ////CLogging::LogMessage(_T("End CMethodInfo::GetAttributes"));
 
     return S_OK;
 }
@@ -1012,11 +1012,11 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetRejitCodeGenFlags(_Out_ 
 
     *pRefitFlags = 0;
 
-    CLogging::LogMessage(_T("Starting CMethodInfo::GetRejitCodeGenFlags"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::GetRejitCodeGenFlags"));
 
     *pRefitFlags = m_dwRejitCodeGenFlags;
 
-    CLogging::LogMessage(_T("Starting CMethodInfo::GetRejitCodeGenFlags"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::GetRejitCodeGenFlags"));
 
     return hr;
 }
@@ -1024,28 +1024,28 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetRejitCodeGenFlags(_Out_ 
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetCodeRva(_Out_ DWORD* pRva)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::GetCodeRva"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::GetCodeRva"));
     IfNullRetPointer(pRva);
 
     IfFailRet(InitializeCorAttributes(m_tkFunction));
 
     *pRva = m_rva;
 
-    CLogging::LogMessage(_T("End CMethodInfo::GetCodeRva"));
+    ////CLogging::LogMessage(_T("End CMethodInfo::GetCodeRva"));
     return hr;
 }
 
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::MethodImplFlags(_Out_ /*CorMethodImpl*/ UINT* pCorMethodImpl)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::MethodImplFlags"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::MethodImplFlags"));
     IfNullRetPointer(pCorMethodImpl);
 
     IfFailRet(InitializeCorAttributes(m_tkFunction));
 
     *pCorMethodImpl = m_implFlags;
 
-    CLogging::LogMessage(_T("End CMethodInfo::MethodImplFlags"));
+    ////CLogging::LogMessage(_T("End CMethodInfo::MethodImplFlags"));
     return hr;
 }
 
@@ -1055,11 +1055,11 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::SetRejitCodeGenFlags(_In_ D
 {
     HRESULT hr = S_OK;
 
-    CLogging::LogMessage(_T("Starting CMethodInfo::SetRejitCodeGenFlags"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::SetRejitCodeGenFlags"));
 
     m_dwRejitCodeGenFlags = dwFlags;
 
-    CLogging::LogMessage(_T("Starting CMethodInfo::SetRejitCodeGenFlags"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::SetRejitCodeGenFlags"));
 
     return hr;
 }
@@ -1067,7 +1067,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::SetRejitCodeGenFlags(_In_ D
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetExceptionSection(_Out_ IExceptionSection** ppExceptionSection)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::GetExceptionSection"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::GetExceptionSection"));
     IfNullRetPointer(ppExceptionSection);
     *ppExceptionSection = NULL;
 
@@ -1087,7 +1087,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetExceptionSection(_Out_ I
     *ppExceptionSection = (IExceptionSection*)(m_pExceptionSection.p);
     (*ppExceptionSection)->AddRef();
 
-    CLogging::LogMessage(_T("End CMethodInfo::GetExceptionSection"));
+    ////CLogging::LogMessage(_T("End CMethodInfo::GetExceptionSection"));
 
     return S_OK;
 }
@@ -1096,7 +1096,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetExceptionSection(_Out_ I
 HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetInstructionFactory(_Out_ IInstructionFactory** ppInstructionFactory)
 {
     HRESULT hr = S_OK;
-    CLogging::LogMessage(_T("Starting CMethodInfo::GetInstructionFactory"));
+    ////CLogging::LogMessage(_T("Starting CMethodInfo::GetInstructionFactory"));
     IfNullRetPointer(ppInstructionFactory);
     *ppInstructionFactory = NULL;
 
@@ -1108,7 +1108,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetInstructionFactory(_Out_
     *ppInstructionFactory = (IInstructionFactory*)(m_pInstructionFactory.p);
     (*ppInstructionFactory)->AddRef();
 
-    CLogging::LogMessage(_T("End CMethodInfo::GetInstructionFactory"));
+    ////CLogging::LogMessage(_T("End CMethodInfo::GetInstructionFactory"));
 
     return S_OK;
 }
@@ -1263,11 +1263,11 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIntermediateRenderedFunc
 {
     HRESULT hr = S_OK;
 
-    CLogging::LogMessage(_T("Start CMethodInfo::GetIntermediateRenderedFunctionBody"));
+    ////CLogging::LogMessage(_T("Start CMethodInfo::GetIntermediateRenderedFunctionBody"));
 
     if (!this->IsInstrumented() || m_pIntermediateRenderedMethod == nullptr)
     {
-        CLogging::LogError(_T("CMethodInfo::GetIntermediateRenderedFunctionBody should only be called if a method body has been set for this function"));
+        ////CLogging::LogError(_T("CMethodInfo::GetIntermediateRenderedFunctionBody should only be called if a method body has been set for this function"));
         return E_FAIL;
     }
 
@@ -1281,7 +1281,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::GetIntermediateRenderedFunc
         *pcbMethodSize = m_cbIntermediateRenderedMethod;
     }
 
-    CLogging::LogMessage(_T("End CMethodInfo::GetIntermediateRenderedFunctionBody"));
+    ////CLogging::LogMessage(_T("End CMethodInfo::GetIntermediateRenderedFunctionBody"));
 
     return hr;
 }
@@ -1294,14 +1294,14 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::SetFinalRenderedFunctionBod
 {
     HRESULT hr = S_OK;
 
-    CLogging::LogMessage(_T("Start CMethodInfo::SetFinalRenderedFunctionBody"));
+    ////CLogging::LogMessage(_T("Start CMethodInfo::SetFinalRenderedFunctionBody"));
     IfNullRetPointer(pMethodHeader);
 
     m_bIsInstrumented = true;
 
     if (m_pFinalRenderedMethod != nullptr)
     {
-        CLogging::LogError(_T("CMethodInfo::SetFinalRenderedFunctionBody - final method body should only be called once."));
+        ////CLogging::LogError(_T("CMethodInfo::SetFinalRenderedFunctionBody - final method body should only be called once."));
         return E_FAIL;
     }
 
@@ -1311,7 +1311,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::SetFinalRenderedFunctionBod
 
     m_cbFinalRenderedMethod = cbMethodSize;
 
-    CLogging::LogMessage(_T("End CMethodInfo::SetFinalRenderedFunctionBody"));
+    ////CLogging::LogMessage(_T("End CMethodInfo::SetFinalRenderedFunctionBody"));
 
     return hr;
 }
@@ -1320,11 +1320,11 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::ApplyFinalInstrumentation()
 {
     HRESULT hr = S_OK;
 
-    CLogging::LogMessage(_T("Start CMethodInfo::ApplyFinalInstrumentation"));
+    ////CLogging::LogMessage(_T("Start CMethodInfo::ApplyFinalInstrumentation"));
 
     if (!this->IsInstrumented())
     {
-        CLogging::LogError(_T("CMethodInfo::ApplyFinalInstrumentation should only be called if a method body has been set for this function"));
+        ////CLogging::LogError(_T("CMethodInfo::ApplyFinalInstrumentation should only be called if a method body has been set for this function"));
         return E_FAIL;
     }
 
@@ -1333,7 +1333,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::ApplyFinalInstrumentation()
 
     if (!IsRejit())
     {
-        CLogging::LogMessage(_T("CMethodInfo::ApplyFinalInstrumentation - Non-rejit case"));
+        ////CLogging::LogMessage(_T("CMethodInfo::ApplyFinalInstrumentation - Non-rejit case"));
 
         ModuleID moduleId;
         IfFailRet(m_pModuleInfo->GetModuleID(&moduleId));
@@ -1362,11 +1362,11 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::ApplyFinalInstrumentation()
     }
     else
     {
-        CLogging::LogMessage(_T("CMethodInfo::ApplyFinalInstrumentation - rejit case"));
+        ////CLogging::LogMessage(_T("CMethodInfo::ApplyFinalInstrumentation - rejit case"));
 
         if (m_pFunctionControl == NULL)
         {
-            CLogging::LogError(_T("CMethodInfo::ApplyFinalInstrumentation - m_pFunctionControl should not be null during a rejit"));
+            ////CLogging::LogError(_T("CMethodInfo::ApplyFinalInstrumentation - m_pFunctionControl should not be null during a rejit"));
             return E_FAIL;
         }
 
@@ -1413,7 +1413,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::ApplyFinalInstrumentation()
         }
     }
 
-    CLogging::LogMessage(_T("End CMethodInfo::ApplyFinalInstrumentation"));
+    ////CLogging::LogMessage(_T("End CMethodInfo::ApplyFinalInstrumentation"));
 
     return hr;
 }
@@ -1428,7 +1428,7 @@ void MicrosoftInstrumentationEngine::CMethodInfo::LogInstructionGraph(_In_ CInst
 
     CComPtr<IInstruction> pInstruction;
 
-    CLogging::LogDumpMessage(_T("[TestIgnore]<OriginalInstructions><![CDATA[\r\n"));
+    ////CLogging::LogDumpMessage(_T("[TestIgnore]<OriginalInstructions><![CDATA[\r\n"));
 
     pInstructionGraph->GetOriginalFirstInstruction(&pInstruction);
 
@@ -1441,9 +1441,9 @@ void MicrosoftInstrumentationEngine::CMethodInfo::LogInstructionGraph(_In_ CInst
         pTemp->GetOriginalNextInstruction(&pInstruction);
     }
 
-    CLogging::LogDumpMessage(_T("[TestIgnore]]]></OriginalInstructions>\r\n"));
+    ////CLogging::LogDumpMessage(_T("[TestIgnore]]]></OriginalInstructions>\r\n"));
 
-    CLogging::LogDumpMessage(_T("    <Instructions><![CDATA[\r\n"));
+    ////CLogging::LogDumpMessage(_T("    <Instructions><![CDATA[\r\n"));
 
     pInstructionGraph->GetFirstInstruction(&pInstruction);
 
@@ -1456,7 +1456,7 @@ void MicrosoftInstrumentationEngine::CMethodInfo::LogInstructionGraph(_In_ CInst
         pTemp->GetNextInstruction(&pInstruction);
     }
 
-    CLogging::LogDumpMessage(_T("    ]]></Instructions>\r\n"));
+    ////CLogging::LogDumpMessage(_T("    ]]></Instructions>\r\n"));
 }
 
 // static
@@ -1467,7 +1467,7 @@ void MicrosoftInstrumentationEngine::CMethodInfo::LogExceptionSection(_In_ CExce
         return;
     }
 
-    CLogging::LogDumpMessage(_T("    <ExceptionClauses>\r\n"));
+    ////CLogging::LogDumpMessage(_T("    <ExceptionClauses>\r\n"));
 
     CComPtr<IEnumExceptionClauses> pEnum;
     pExceptionSection->GetExceptionClauses(&pEnum);
@@ -1527,21 +1527,21 @@ void MicrosoftInstrumentationEngine::CMethodInfo::LogExceptionSection(_In_ CExce
         // The token of the type in the catch block
         pExceptionClause->GetExceptionHandlerType(&tokException);
 
-        CLogging::LogDumpMessage(_T("        <ExceptionClause>\r\n"));
-        CLogging::LogDumpMessage(_T("            <Flags>0x%08x</Flags>\r\n"), flags);
-        CLogging::LogDumpMessage(_T("            <FirstTryOffset>0x%08x</FirstTryOffset>\r\n"), offsetFirstTry);
-        CLogging::LogDumpMessage(_T("            <LastTryOffset>0x%08x</LastTryOffset>\r\n"), offsetLastTry);
-        CLogging::LogDumpMessage(_T("            <FirstHandlerOffset>0x%08x</FirstHandlerOffset>\r\n"), offsetFirstHandler);
-        CLogging::LogDumpMessage(_T("            <LastHandlerOffset>0x%08x</LastHandlerOffset>\r\n"), offsetLastHandler);
-        CLogging::LogDumpMessage(_T("            <FilterOffset>0x%08x</FilterOffset>\r\n"), offsetFilter);
-        CLogging::LogDumpMessage(_T("            <ExceptionToken>0x%08x</ExceptionToken>\r\n"), tokException);
-        CLogging::LogDumpMessage(_T("        </ExceptionClause>\r\n"));
+        ////CLogging::LogDumpMessage(_T("        <ExceptionClause>\r\n"));
+        ////CLogging::LogDumpMessage(_T("            <Flags>0x%08x</Flags>\r\n"), flags);
+        ////CLogging::LogDumpMessage(_T("            <FirstTryOffset>0x%08x</FirstTryOffset>\r\n"), offsetFirstTry);
+        ////CLogging::LogDumpMessage(_T("            <LastTryOffset>0x%08x</LastTryOffset>\r\n"), offsetLastTry);
+        ////CLogging::LogDumpMessage(_T("            <FirstHandlerOffset>0x%08x</FirstHandlerOffset>\r\n"), offsetFirstHandler);
+        ////CLogging::LogDumpMessage(_T("            <LastHandlerOffset>0x%08x</LastHandlerOffset>\r\n"), offsetLastHandler);
+        ////CLogging::LogDumpMessage(_T("            <FilterOffset>0x%08x</FilterOffset>\r\n"), offsetFilter);
+        ////CLogging::LogDumpMessage(_T("            <ExceptionToken>0x%08x</ExceptionToken>\r\n"), tokException);
+        ////CLogging::LogDumpMessage(_T("        </ExceptionClause>\r\n"));
 
         pExceptionClause.Release();
         pEnum->Next(1, &pExceptionClause, &cActual);
     }
 
-    CLogging::LogDumpMessage(_T("    </ExceptionClauses>\r\n"));
+    ////CLogging::LogDumpMessage(_T("    </ExceptionClauses>\r\n"));
 }
 
 // static
@@ -1552,18 +1552,18 @@ void MicrosoftInstrumentationEngine::CMethodInfo::LogCorIlMap(_In_ COR_IL_MAP* p
         return;
     }
 
-    CLogging::LogDumpMessage(_T("    <CorIlMap>\r\n"));
+    ////CLogging::LogDumpMessage(_T("    <CorIlMap>\r\n"));
 
     for (DWORD i = 0; i < dwCorILMapmLen; i++)
     {
-        CLogging::LogDumpMessage(_T("        <CorIlMapEntry>\r\n"));
-        CLogging::LogDumpMessage(_T("            <fAccurate>%01d</fAccurate>\r\n"), pCorIlMap[i].fAccurate);
-        CLogging::LogDumpMessage(_T("            <oldOffset>0x%08x</oldOffset>\r\n"), pCorIlMap[i].oldOffset);
-        CLogging::LogDumpMessage(_T("            <newOffset>0x%08x</newOffset>\r\n"), pCorIlMap[i].newOffset);
-        CLogging::LogDumpMessage(_T("        </CorIlMapEntry>\r\n"));
+        ////CLogging::LogDumpMessage(_T("        <CorIlMapEntry>\r\n"));
+        ////CLogging::LogDumpMessage(_T("            <fAccurate>%01d</fAccurate>\r\n"), pCorIlMap[i].fAccurate);
+        ////CLogging::LogDumpMessage(_T("            <oldOffset>0x%08x</oldOffset>\r\n"), pCorIlMap[i].oldOffset);
+        ////CLogging::LogDumpMessage(_T("            <newOffset>0x%08x</newOffset>\r\n"), pCorIlMap[i].newOffset);
+        ////CLogging::LogDumpMessage(_T("        </CorIlMapEntry>\r\n"));
     }
 
-    CLogging::LogDumpMessage(_T("    </CorIlMap>\r\n"));
+    ////CLogging::LogDumpMessage(_T("    </CorIlMap>\r\n"));
 }
 
 // static
@@ -1677,45 +1677,45 @@ void MicrosoftInstrumentationEngine::CMethodInfo::LogMethodInfo()
     DWORD maxStack;
     this->GetMaxStack(&maxStack);
 
-    CLogging::LogDumpMessage(_T("<?xml version=\"1.0\"?>\r\n"));
-    CLogging::LogDumpMessage(_T("[TestIgnore]<Pid>%5d</Pid>\r\n"), GetCurrentProcessId());
-    CLogging::LogDumpMessage(_T("<InstrumentedMethod>\r\n"));
-    CLogging::LogDumpMessage(_T("    <Name>%s</Name>\r\n"), bstrMethodName.m_str);
-    CLogging::LogDumpMessage(_T("    <FullName>%s</FullName>\r\n"), bstrMethodFullName.m_str);
-    CLogging::LogDumpMessage(_T("    <ClassID Volatile=\"True\">0x%08x</ClassID>\r\n"), classId);
-    CLogging::LogDumpMessage(_T("    <FunctionID>0x%08x</FunctionID>\r\n"), isStatic);
-    CLogging::LogDumpMessage(_T("    <MethodToken>0x%08x</MethodToken>\r\n"), methodToken);
-    CLogging::LogDumpMessage(_T("    <GenericParameterCount>0x%08x</GenericParameterCount>\r\n"), genericParamCount);
-    CLogging::LogDumpMessage(_T("    <IsStatic>%1d</IsStatic>\r\n"), isStatic);
-    CLogging::LogDumpMessage(_T("    <IsPublic>%1d</IsPublic>\r\n"), isPublic);
-    CLogging::LogDumpMessage(_T("    <IsPrivate>%1d</IsPrivate>\r\n"), isPrivate);
-    CLogging::LogDumpMessage(_T("    <IsPropGetter>%1d</IsPropGetter>\r\n"), isPropGetter);
-    CLogging::LogDumpMessage(_T("    <IsPropSetter>%1d</IsPropSetter>\r\n"), isPropSetter);
-    CLogging::LogDumpMessage(_T("    <IsFinalizer>%1d</IsFinalizer>\r\n"), isFinalizer);
-    CLogging::LogDumpMessage(_T("    <IsConstructor>%1d</IsConstructor>\r\n"), isConstructor);
-    CLogging::LogDumpMessage(_T("    <IsStaticConstructor>%1d</IsStaticConstructor>\r\n"), isConstructor & isStatic);
-    CLogging::LogDumpMessage(_T("    <DeclaringTypeToken>0x%08x</DeclaringTypeToken>\r\n"), declaringTypeToken);
+    ////CLogging::LogDumpMessage(_T("<?xml version=\"1.0\"?>\r\n"));
+    ////CLogging::LogDumpMessage(_T("[TestIgnore]<Pid>%5d</Pid>\r\n"), GetCurrentProcessId());
+    ////CLogging::LogDumpMessage(_T("<InstrumentedMethod>\r\n"));
+    ////CLogging::LogDumpMessage(_T("    <Name>%s</Name>\r\n"), bstrMethodName.m_str);
+    ////CLogging::LogDumpMessage(_T("    <FullName>%s</FullName>\r\n"), bstrMethodFullName.m_str);
+    ////CLogging::LogDumpMessage(_T("    <ClassID Volatile=\"True\">0x%08x</ClassID>\r\n"), classId);
+    ////CLogging::LogDumpMessage(_T("    <FunctionID>0x%08x</FunctionID>\r\n"), isStatic);
+    ////CLogging::LogDumpMessage(_T("    <MethodToken>0x%08x</MethodToken>\r\n"), methodToken);
+    ////CLogging::LogDumpMessage(_T("    <GenericParameterCount>0x%08x</GenericParameterCount>\r\n"), genericParamCount);
+    ////CLogging::LogDumpMessage(_T("    <IsStatic>%1d</IsStatic>\r\n"), isStatic);
+    ////CLogging::LogDumpMessage(_T("    <IsPublic>%1d</IsPublic>\r\n"), isPublic);
+    ////CLogging::LogDumpMessage(_T("    <IsPrivate>%1d</IsPrivate>\r\n"), isPrivate);
+    ////CLogging::LogDumpMessage(_T("    <IsPropGetter>%1d</IsPropGetter>\r\n"), isPropGetter);
+    ////CLogging::LogDumpMessage(_T("    <IsPropSetter>%1d</IsPropSetter>\r\n"), isPropSetter);
+    ////CLogging::LogDumpMessage(_T("    <IsFinalizer>%1d</IsFinalizer>\r\n"), isFinalizer);
+    ////CLogging::LogDumpMessage(_T("    <IsConstructor>%1d</IsConstructor>\r\n"), isConstructor);
+    ////CLogging::LogDumpMessage(_T("    <IsStaticConstructor>%1d</IsStaticConstructor>\r\n"), isConstructor & isStatic);
+    ////CLogging::LogDumpMessage(_T("    <DeclaringTypeToken>0x%08x</DeclaringTypeToken>\r\n"), declaringTypeToken);
 
     tstring strRetValType = GetCorElementTypeString(pReturnType);
-    CLogging::LogDumpMessage(_T("    <RetValueCorElementType>%s</RetValueCorElementType>\r\n"), strRetValType.c_str());
-    CLogging::LogDumpMessage(_T("    <RetTypeToken>0x%08x</RetTypeToken>\r\n"), retTypeToken);
+    ////CLogging::LogDumpMessage(_T("    <RetValueCorElementType>%s</RetValueCorElementType>\r\n"), strRetValType.c_str());
+    ////CLogging::LogDumpMessage(_T("    <RetTypeToken>0x%08x</RetTypeToken>\r\n"), retTypeToken);
 
-    CLogging::LogDumpMessage(_T("    <CorSignature>"));
+    ////CLogging::LogDumpMessage(_T("    <CorSignature>"));
     for (DWORD i = 0; i < cbCorSigActual; i++)
     {
-        CLogging::LogDumpMessage(_T("0x%02x "), pCorSig[i]);
+        ////CLogging::LogDumpMessage(_T("0x%02x "), pCorSig[i]);
     }
-    CLogging::LogDumpMessage(_T("</CorSignature>\r\n"), retTypeToken);
-    CLogging::LogDumpMessage(_T("    <CorMethodAttr>0x%08x</CorMethodAttr>\r\n"), corMethodAttr);
-    CLogging::LogDumpMessage(_T("    <CodeRVA>0x%08x</CodeRVA>\r\n"), rva);
-    CLogging::LogDumpMessage(_T("    <MethodImpl>0x%08x</MethodImpl>\r\n"), methodImpl);
-    CLogging::LogDumpMessage(_T("    <LocalSignature>"));
+    ////CLogging::LogDumpMessage(_T("</CorSignature>\r\n"), retTypeToken);
+    ////CLogging::LogDumpMessage(_T("    <CorMethodAttr>0x%08x</CorMethodAttr>\r\n"), corMethodAttr);
+    ////CLogging::LogDumpMessage(_T("    <CodeRVA>0x%08x</CodeRVA>\r\n"), rva);
+    ////CLogging::LogDumpMessage(_T("    <MethodImpl>0x%08x</MethodImpl>\r\n"), methodImpl);
+    ////CLogging::LogDumpMessage(_T("    <LocalSignature>"));
     for (DWORD i = 0; i < dwLocalSigCount; i++)
     {
-        CLogging::LogDumpMessage(_T("0x%02x "), pLocalSig[i]);
+        ////CLogging::LogDumpMessage(_T("0x%02x "), pLocalSig[i]);
     }
-    CLogging::LogDumpMessage(_T("</LocalSignature>\r\n"));
-    CLogging::LogDumpMessage(_T("    <MaxStack>0x%08x</MaxStack>\r\n"), maxStack);
+    ////CLogging::LogDumpMessage(_T("</LocalSignature>\r\n"));
+    ////CLogging::LogDumpMessage(_T("    <MaxStack>0x%08x</MaxStack>\r\n"), maxStack);
 
     if (SUCCEEDED(this->GetInstrumentationResults(&pInstructionGraph, &pExceptionSection, (COR_IL_MAP**)&pCorILMap, &dwCorILMapmLen)))
     {
@@ -1724,7 +1724,7 @@ void MicrosoftInstrumentationEngine::CMethodInfo::LogMethodInfo()
         LogCorIlMap(pCorILMap, dwCorILMapmLen);
     }
 
-    CLogging::LogDumpMessage(_T("</InstrumentedMethod>\r\n"));
+    ////CLogging::LogDumpMessage(_T("</InstrumentedMethod>\r\n"));
 }
 
 
@@ -1895,7 +1895,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::MergeILInstrumentedCodeMap(
 {
     HRESULT hr = S_OK;
 
-    CLogging::LogMessage(_T("Start CMethodInfo::MergeILInstrumentedCodeMap"));
+    ////CLogging::LogMessage(_T("Start CMethodInfo::MergeILInstrumentedCodeMap"));
 
     if (!m_pCorILMap.IsEmpty())
     {
@@ -1959,7 +1959,7 @@ HRESULT MicrosoftInstrumentationEngine::CMethodInfo::MergeILInstrumentedCodeMap(
 
     // Save the map with the module info so that it can be retrieved later by the JIT callbacks.
     m_pModuleInfo->SetILInstrumentationMap(this, m_pCorILMap);
-    CLogging::LogMessage(_T("End CMethodInfo::MergeILInstrumentedCodeMap"));
+    ////CLogging::LogMessage(_T("End CMethodInfo::MergeILInstrumentedCodeMap"));
 
     return S_OK;
 }

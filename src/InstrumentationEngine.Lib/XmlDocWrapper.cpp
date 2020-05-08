@@ -23,7 +23,7 @@ HRESULT CXmlDocWrapper::LoadContent(_In_ LPCWSTR wszValue)
 
     if (m_pDocument != nullptr)
     {
-        CLogging::LogError(_T("Attempted to load multiple xml files into a single document."));
+        //CLogging::LogError(_T("Attempted to load multiple xml files into a single document."));
         return E_FAIL;
     }
 
@@ -33,7 +33,7 @@ HRESULT CXmlDocWrapper::LoadContent(_In_ LPCWSTR wszValue)
     hr = CoCreateInstance(CLSID_DOMDocument60, NULL, CLSCTX_INPROC_SERVER, IID_IXMLDOMDocument2, (void**)&pDocument);
     if (FAILED(hr))
     {
-        CLogging::LogError(_T("Failed to create xml document"));
+        //CLogging::LogError(_T("Failed to create xml document"));
         return E_FAIL;
     }
 
@@ -89,11 +89,11 @@ HRESULT CXmlDocWrapper::LoadContent(_In_ LPCWSTR wszValue)
             errorText.append(_T("\r\nLine Number:"));
             errorText.append(wszLineNumber);
 
-            CLogging::LogError(errorText.c_str());
+            //CLogging::LogError(errorText.c_str());
         }
         else
         {
-            CLogging::LogError(_T("Failed to load xml file."));
+            //CLogging::LogError(_T("Failed to load xml file."));
         }
 
         return E_FAIL;

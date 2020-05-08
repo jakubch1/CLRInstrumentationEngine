@@ -34,7 +34,7 @@ HRESULT MicrosoftInstrumentationEngine::CInstrumentationMethod::Initialize(
     hr = m_pInstrumentationMethod->Initialize(pProfilerManager);
     if (FAILED(hr))
     {
-        CLogging::LogError(_T("CInstrumentationMethod::Initialize - failed to initialize instrumentation method PID: %u hr: %x name: %s"), GetCurrentProcessId(), hr, m_bstrName.m_str);
+        //CLogging::LogError(_T("CInstrumentationMethod::Initialize - failed to initialize instrumentation method PID: %u hr: %x name: %s"), GetCurrentProcessId(), hr, m_bstrName.m_str);
         return hr;
     }
 
@@ -74,7 +74,7 @@ HRESULT MicrosoftInstrumentationEngine::CInstrumentationMethod::InitializeCore(
         (m_bstrModuleFolder.Length() == 0) ||
         (m_bstrModule.Length() == 0))
     {
-        CLogging::LogError(_T("CInstrumentationMethod::Initialize - Missing configuration param"));
+        //CLogging::LogError(_T("CInstrumentationMethod::Initialize - Missing configuration param"));
         return E_INVALIDARG;
     }
 
@@ -89,7 +89,7 @@ HRESULT MicrosoftInstrumentationEngine::CInstrumentationMethod::InitializeCore(
     {
         auto error = ::GetLastError();
         // Failed to load the module.
-        CLogging::LogError(_T("CInstrumentationMethod::Initialize - failed to load instrumentation method module (path=%s, error=%d)"), wszModuleFullPath, error);
+        //CLogging::LogError(_T("CInstrumentationMethod::Initialize - failed to load instrumentation method module (path=%s, error=%d)"), wszModuleFullPath, error);
         return HRESULT_FROM_WIN32(error);
     }
 
@@ -99,7 +99,7 @@ HRESULT MicrosoftInstrumentationEngine::CInstrumentationMethod::InitializeCore(
         CSignatureValidator validator;
         if (FALSE == validator.VerifyEmbeddedSignature(wszModuleFullPath))
         {
-            CLogging::LogError(_T("CInstrumentationMethod::Initialize - Instrumentation Method should be code signed"));
+            //CLogging::LogError(_T("CInstrumentationMethod::Initialize - Instrumentation Method should be code signed"));
             FreeLibrary(m_hmod);
             return E_FAIL;
         }
@@ -113,7 +113,7 @@ HRESULT MicrosoftInstrumentationEngine::CInstrumentationMethod::InitializeCore(
     {
         auto error = ::GetLastError();
         FreeLibrary(m_hmod);
-        CLogging::LogError(_T("CInstrumentationMethod::Initialize - failed to find DllGetClassObject"));
+        //CLogging::LogError(_T("CInstrumentationMethod::Initialize - failed to find DllGetClassObject"));
         return HRESULT_FROM_WIN32(error);
     }
 
@@ -121,7 +121,7 @@ HRESULT MicrosoftInstrumentationEngine::CInstrumentationMethod::InitializeCore(
     hr = pfnDllGetClassObject(m_guidClassId, __uuidof(IClassFactory), (LPVOID*)&pFactory);
     if (FAILED(hr))
     {
-        CLogging::LogError(_T("CInstrumentationMethod::Initialize - failed to get class factory from instrumentation method dll"));
+        //CLogging::LogError(_T("CInstrumentationMethod::Initialize - failed to get class factory from instrumentation method dll"));
         return hr;
     }
 
@@ -129,7 +129,7 @@ HRESULT MicrosoftInstrumentationEngine::CInstrumentationMethod::InitializeCore(
     hr = pFactory->CreateInstance(NULL, __uuidof(IInstrumentationMethod), (LPVOID*)&m_pInstrumentationMethod);
     if (FAILED(hr))
     {
-        CLogging::LogError(_T("CInstrumentationMethod::Initialize - failed to get class factory from instrumentation method dll"));
+        //CLogging::LogError(_T("CInstrumentationMethod::Initialize - failed to get class factory from instrumentation method dll"));
         return hr;
     }
 

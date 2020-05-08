@@ -47,7 +47,7 @@ namespace MicrosoftInstrumentationEngine
         {
             IfNotInitRetUnexpected(m_initialize);
 
-            CLogging::LogMessage(wszMessage);
+            //CLogging::LogMessage(wszMessage);
             return S_OK;
         }
 
@@ -55,7 +55,7 @@ namespace MicrosoftInstrumentationEngine
         {
             IfNotInitRetUnexpected(m_initialize);
 
-            CLogging::LogError(wszError);
+            //CLogging::LogError(wszError);
             return S_OK;
         }
 
@@ -63,7 +63,7 @@ namespace MicrosoftInstrumentationEngine
         {
             IfNotInitRetUnexpected(m_initialize);
 
-            CLogging::LogDumpMessage(wszMessage);
+            //CLogging::LogDumpMessage(wszMessage);
             return S_OK;
         }
 

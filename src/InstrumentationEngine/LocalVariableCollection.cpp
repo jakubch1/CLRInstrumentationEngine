@@ -39,17 +39,17 @@ HRESULT MicrosoftInstrumentationEngine::CLocalVariableCollection::ReplaceSignatu
 {
     //TODO Should we allow complete signature removal?
 
-    CLogging::LogMessage(_T("Begin CLocalVariableCollection::ReplaceSignature"));
+    //CLogging::LogMessage(_T("Begin CLocalVariableCollection::ReplaceSignature"));
 
     if (m_bReadOnly)
     {
-        CLogging::LogError(_T("Local variable collection is read-only"));
+        //CLogging::LogError(_T("Local variable collection is read-only"));
         return E_FAIL;
     }
 
     if (m_initialized)
     {
-        CLogging::LogError(_T("Already initialized from original signature."));
+        //CLogging::LogError(_T("Already initialized from original signature."));
         return E_FAIL;
     }
     IfNullRetPointer(pSignature);
@@ -71,7 +71,7 @@ HRESULT MicrosoftInstrumentationEngine::CLocalVariableCollection::ReplaceSignatu
 
     IfFailRet(Initialize());
 
-    CLogging::LogMessage(_T("End CLocalVariableCollection::ReplaceSignature"));
+    //CLogging::LogMessage(_T("End CLocalVariableCollection::ReplaceSignature"));
 
     return S_OK;
 }
@@ -94,7 +94,7 @@ HRESULT MicrosoftInstrumentationEngine::CLocalVariableCollection::AddLocal(_In_ 
 
     if (m_bReadOnly)
     {
-        CLogging::LogError(_T("Local variable collection is read-only"));
+        //CLogging::LogError(_T("Local variable collection is read-only"));
         return E_FAIL;
     }
 
@@ -164,7 +164,7 @@ HRESULT MicrosoftInstrumentationEngine::CLocalVariableCollection::CommitSignatur
 
     if (m_bReadOnly)
     {
-        CLogging::LogError(_T("Local variable collection is read-only"));
+        //CLogging::LogError(_T("Local variable collection is read-only"));
         return E_FAIL;
     }
 
