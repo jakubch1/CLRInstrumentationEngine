@@ -104,6 +104,10 @@ namespace MicrosoftInstrumentationEngine
         // to point to the old instruction to point to the new instruction.
         virtual HRESULT __stdcall InsertBeforeAndRetargetOffsets(_In_ IInstruction* pInstructionOrig, _In_ IInstruction* pInstructionNew) override;
 
+        // Insert an instruction before another instruction AND update branch offsets and exception ranges that used
+        // to point to the old instruction to point to the new instruction.
+        virtual HRESULT __stdcall InsertMultiBeforeAndRetargetOffsets(_In_ IInstruction** pInstructionOrig, _In_ IInstruction** pInstructionNew, _In_ DWORD size) override;
+
         // Replace an instruction with another instruction. The old instruction continues to live in the original graph but is marked replaced
         virtual HRESULT __stdcall Replace(_In_ IInstruction* pInstructionOrig, _In_ IInstruction *pInstructionNew) override;
 

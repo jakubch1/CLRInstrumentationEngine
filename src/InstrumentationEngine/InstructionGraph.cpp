@@ -960,6 +960,167 @@ HRESULT MicrosoftInstrumentationEngine::CInstructionGraph::InsertBeforeAndRetarg
 }
 
 
+// Insert an instruction before another instruction AND update jmp targets and exception ranges that used
+// to point to the old instruction to point to the new instruction.
+HRESULT MicrosoftInstrumentationEngine::CInstructionGraph::InsertMultiBeforeAndRetargetOffsets(_In_ IInstruction** pInstructionOrig, _In_ IInstruction** pInstructionNew, _In_ DWORD size)
+{
+    HRESULT hr = S_OK;
+
+    ////CLogging::LogMessage(_T("Starting CInstructionGraph::InsertBeforeAndRetargetOffsets"));
+    CCriticalSectionHolder lock(&m_cs);
+
+    IfNullRetPointer(pInstructionOrig);
+    IfNullRetPointer(pInstructionNew);    
+
+    IInstruction** pInstructionOrigIter = pInstructionOrig;
+    IInstruction** pInstructionNewIter = pInstructionNew;
+
+    std::unordered_map<IInstruction*, IInstruction*> retargets;
+
+    for(DWORD i = 0; i < size; ++i)
+    {
+        CInstruction* pInstrOrig = (CInstruction*)*pInstructionOrigIter;
+        CInstruction* pInstrNew = (CInstruction*)*pInstructionNewIter;
+
+        CComPtr<CInstruction> pPreviousInstruction;
+        pInstrOrig->GetPreviousInstruction((IInstruction**)(&pPreviousInstruction));
+
+        IfFailRet(pInstrOrig->SetPreviousInstruction(pInstrNew, false));
+        IfFailRet(pInstrNew->SetNextInstruction(pInstrOrig, false));
+
+        if (pPreviousInstruction != NULL)
+        {
+            if (pPreviousInstruction != pInstrNew)
+            {
+                IfFailRet(pPreviousInstruction->SetNextInstruction(pInstrNew, false));
+                IfFailRet(pInstrNew->SetPreviousInstruction(pPreviousInstruction, false));
+            }
+        }
+        else
+        {
+            // original instruction must have been the the first instruction in the graph.
+            m_pFirstInstruction = pInstrNew;
+        }
+
+        if(retargets.find(pInstrOrig) == retargets.end())
+        {
+            retargets[pInstrOrig] = pInstrNew;
+        }        
+
+        pInstructionOrigIter++;
+        pInstructionNewIter++;
+    }
+
+
+    // NOTE: Unlike intellitrace's engine, the offsets of instructions are updated after each change.
+    // This is necessary since this is an API to be consumed by multiple instrumentation methods.
+    IfFailRet(CalculateInstructionOffsets());
+
+    // Search the graph for any branch whose branch target is the old instruction. Set the branch target
+    // to the new instruction.
+    CComPtr<IInstruction> pCurr = (IInstruction*)m_pFirstInstruction;
+    while (pCurr != nullptr)
+    {
+        BOOL isBranch = FALSE;
+        IfFailRet(pCurr->GetIsBranch(&isBranch));
+
+        if (isBranch)
+        {
+            CComPtr<IBranchInstruction> pBranch;
+            IfFailRet(pCurr->QueryInterface(__uuidof(IBranchInstruction), (LPVOID*)&pBranch));
+
+            CComPtr<IInstruction> pBranchTarget;
+            IfFailRet(pBranch->GetBranchTarget(&pBranchTarget));
+
+            // If the branch target is the original instruction AND the branch is not the new instruction,
+            // update it. Note the second condition is important because for things like leave instructions,
+            // often the next instruction is the branch target and resetting this would create an infinite loop.
+            std::unordered_map<IInstruction*, IInstruction*>::iterator it = retargets.find(pBranchTarget);
+            if (it != retargets.end() && pCurr != it->second)
+            {
+                IfFailRet(pBranch->SetBranchTarget(it->second));
+            }
+        }
+        else
+        {
+            BOOL isSwitch = FALSE;
+            IfFailRet(pCurr->GetIsSwitch(&isSwitch));
+
+            if (isSwitch)
+            {
+                CComPtr<ISwitchInstruction> pSwitch;
+                IfFailRet(pCurr->QueryInterface(__uuidof(ISwitchInstruction), (LPVOID*)&pSwitch));
+
+                DWORD branchCount;
+                pSwitch->GetBranchCount(&branchCount);
+
+                for(DWORD i = 0; i < branchCount; ++i)
+                {
+                    CComPtr<IInstruction> pBranchTarget;
+                    pSwitch->GetBranchTarget(i, &pBranchTarget);
+
+                    std::unordered_map<IInstruction*, IInstruction*>::iterator it = retargets.find(pBranchTarget);
+                    if (it != retargets.end())
+                    {
+                        IfFailRet(pSwitch->SetBranchTarget(i, it->second));
+                    }
+                }
+            }
+        }
+
+        CComPtr<IInstruction> pTemp = pCurr;
+        pCurr.Release();
+        pTemp->GetNextInstruction(&pCurr);
+    }
+
+    // Search the exception clauses for anything that points to the old instruction
+    // Set that target to the new instruction
+    if (m_pMethodInfo != NULL)
+    {
+        CComPtr<CExceptionSection> pExceptionSection;
+        IfFailRet(m_pMethodInfo->GetExceptionSection((IExceptionSection**)&pExceptionSection));
+        if (pExceptionSection != NULL)
+        {
+            CComPtr<IEnumExceptionClauses> pEnumExceptionClauses;
+            IfFailRet(pExceptionSection->GetExceptionClauses(&pEnumExceptionClauses));
+
+            DWORD cActual = 0;
+            CComPtr<IExceptionClause> pExceptionClause;
+            pEnumExceptionClauses->Next(1, &pExceptionClause, &cActual);
+
+            std::vector<CComPtr<IInstruction>> instructions;
+            instructions.resize(5);
+
+            while (pExceptionClause != nullptr)
+            {
+                IfFailRet(pExceptionClause->GetHandlerFirstInstruction(&instructions[0]));
+                IfFailRet(pExceptionClause->GetHandlerLastInstruction(&instructions[1]));
+                IfFailRet(pExceptionClause->GetTryFirstInstruction(&instructions[2]));
+                IfFailRet(pExceptionClause->GetTryLastInstruction(&instructions[3]));
+                IfFailRet(pExceptionClause->GetFilterFirstInstruction(&instructions[4]));
+
+                for(DWORD i = 0; i < 5; i++)
+                {
+                    std::unordered_map<IInstruction*, IInstruction*>::iterator it = retargets.find(instructions[i]);
+                    if (it != retargets.end())
+                    {
+                        CExceptionClause* pClause = (CExceptionClause*)((pExceptionClause).p);
+                        IfFailRet(pClause->UpdateInstruction((CInstruction*)it->first, (CInstruction*)it->second));                       
+                    }
+                }
+
+                pExceptionClause.Release();
+                pEnumExceptionClauses->Next(1, &pExceptionClause, &cActual);
+            }
+        }
+    }
+
+    ////CLogging::LogMessage(_T("End CInstructionGraph::InsertBeforeAndRetargetOffsets"));
+
+    return hr;
+}
+
+
 // Replace an instruction with another instruction. The old instruction continues to live in the original graph but is marked replaced
 HRESULT MicrosoftInstrumentationEngine::CInstructionGraph::Replace(_In_ IInstruction* pInstructionOrig, _In_ IInstruction *pInstructionNew)
 {
