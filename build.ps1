@@ -169,6 +169,8 @@ $filterArgs = "-latest -prerelease -requires $($VsRequirements -join ' ') -prope
 # Restrict the VS version if running from a context that has the VisualStudioVersion env variable (e.g. Developer Command Prompt).
 # This will make sure that VisualStudioVersion matches the VS version of MSBuild in order to avoid mismatches (e.g. using a Dev15
 # Developer Command Prompt but invoking Dev16's MSBuild).
+Write-Verbose "A"
+
 if ($env:VisualStudioVersion)
 {
     $vsversion = [version]$($env:VisualStudioVersion)
@@ -176,7 +178,13 @@ if ($env:VisualStudioVersion)
     $filterArgs = "$filterArgs -version `"[$($vsversion.Major).0,$($vsversion.Major + 1).0)`""
 }
 
+Write-Verbose "B"
 $installationPath = Invoke-Expression "& $vswhere $filterArgs"
+
+Write-Verbose "Path: $installationPath"
+
+$installationPath = "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\"
+
 $msbuild = Join-Path $installationPath 'MSBuild\Current\bin\MSBuild.exe'
 if (-not (Test-Path $msbuild))
 {

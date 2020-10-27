@@ -59,7 +59,7 @@ library MicrosoftInstrumentationEngine
     // If IProfilerManager3::GetApiVersion returns a number greater than or equal to this number,
     // the client can be guaranteed that at least every interface and enumeration defined in
     // the api that the client is compiled against exists in the linked version.
-    const DWORD CLR_INSTRUMENTATION_ENGINE_API_VER = 6;
+    const DWORD CLR_INSTRUMENTATION_ENGINE_API_VER = 7;
 
     [
         object,
@@ -588,6 +588,10 @@ library MicrosoftInstrumentationEngine
         // Insert an instruction before another instruction AND update jmp targets and exception ranges that used
         // to point to the old instruction to point to the new instruction.
         HRESULT InsertBeforeAndRetargetOffsets([in] IInstruction* pInstructionOrig, [in] IInstruction* pInstructionNew);
+
+        // Insert an instruction before another instruction AND update jmp targets and exception ranges that used
+        // to point to the old instruction to point to the new instruction.
+        HRESULT InsertMultiBeforeAndRetargetOffsets([in] IInstruction** pInstructionOrig, [in] IInstruction** pInstructionNew, [in] DWORD size);
 
         // Replace an instruction with another instruction. The old instruction continues to live in the original graph but is marked replaced
         HRESULT Replace([in] IInstruction* pInstructionOrig, [in] IInstruction *pInstructionNew);

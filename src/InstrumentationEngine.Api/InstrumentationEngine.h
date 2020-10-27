@@ -4,7 +4,7 @@
 
 
  /* File created by MIDL compiler version 8.01.0622 */
-/* at Mon Jan 18 19:14:07 2038
+/* at Tue Jan 19 04:14:07 2038
  */
 /* Compiler settings for InstrumentationEngine.idl:
     Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.01.0622 
@@ -497,7 +497,7 @@ extern "C"{
 
 
 
-#define	CLR_INSTRUMENTATION_ENGINE_API_VER	( 6 )
+#define	CLR_INSTRUMENTATION_ENGINE_API_VER	( 7 )
 
 
 enum LoggingFlags
@@ -2876,6 +2876,11 @@ EXTERN_C const IID IID_IInstructionGraph;
             /* [in] */ __RPC__in_opt IInstruction *pInstructionOrig,
             /* [in] */ __RPC__in_opt IInstruction *pInstructionNew) = 0;
         
+        virtual HRESULT STDMETHODCALLTYPE InsertMultiBeforeAndRetargetOffsets( 
+            /* [in] */ __RPC__deref_in_opt IInstruction **pInstructionOrig,
+            /* [in] */ __RPC__deref_in_opt IInstruction **pInstructionNew,
+            /* [in] */ DWORD size) = 0;
+        
         virtual HRESULT STDMETHODCALLTYPE Replace( 
             /* [in] */ __RPC__in_opt IInstruction *pInstructionOrig,
             /* [in] */ __RPC__in_opt IInstruction *pInstructionNew) = 0;
@@ -2977,6 +2982,12 @@ EXTERN_C const IID IID_IInstructionGraph;
             /* [in] */ __RPC__in_opt IInstruction *pInstructionOrig,
             /* [in] */ __RPC__in_opt IInstruction *pInstructionNew);
         
+        HRESULT ( STDMETHODCALLTYPE *InsertMultiBeforeAndRetargetOffsets )( 
+            __RPC__in IInstructionGraph * This,
+            /* [in] */ __RPC__deref_in_opt IInstruction **pInstructionOrig,
+            /* [in] */ __RPC__deref_in_opt IInstruction **pInstructionNew,
+            /* [in] */ DWORD size);
+        
         HRESULT ( STDMETHODCALLTYPE *Replace )( 
             __RPC__in IInstructionGraph * This,
             /* [in] */ __RPC__in_opt IInstruction *pInstructionOrig,
@@ -3066,6 +3077,9 @@ EXTERN_C const IID IID_IInstructionGraph;
 
 #define IInstructionGraph_InsertBeforeAndRetargetOffsets(This,pInstructionOrig,pInstructionNew)	\
     ( (This)->lpVtbl -> InsertBeforeAndRetargetOffsets(This,pInstructionOrig,pInstructionNew) ) 
+
+#define IInstructionGraph_InsertMultiBeforeAndRetargetOffsets(This,pInstructionOrig,pInstructionNew,size)	\
+    ( (This)->lpVtbl -> InsertMultiBeforeAndRetargetOffsets(This,pInstructionOrig,pInstructionNew,size) ) 
 
 #define IInstructionGraph_Replace(This,pInstructionOrig,pInstructionNew)	\
     ( (This)->lpVtbl -> Replace(This,pInstructionOrig,pInstructionNew) ) 
