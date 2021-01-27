@@ -328,7 +328,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL Darwin)   #TODO make linux or darwin
             # Copy the PAL lib from it's original location and do the redefine
             add_custom_command(
                 OUTPUT ${redefine_lib_location}
-                COMMAND ${OBJCOPY} --output-target=mach-o-x86-64 --redefine-syms ${REDEFINES_FILE} ${lib_location} ${redefine_lib_location}
+                COMMAND ${OBJCOPY} --redefine-syms ${REDEFINES_FILE} ${lib_location} ${redefine_lib_location}
                 DEPENDS pal_redefines ${lib_location} ${REDEFINES_FILE}
                 COMMENT "Redefining exported PAL symbols in ${lib_location}"
             )
@@ -346,8 +346,8 @@ if (CMAKE_SYSTEM_NAME STREQUAL Darwin)   #TODO make linux or darwin
 else()
     message(FATAL_ERROR "Linux is only supported platform.")
 endif()
-add_library_pal(coreclrpal false ${CORECLR_PAL_ROOT}/lib/${CMAKE_BUILD_TYPE}/libcoreclrpal.a)
-add_library_pal(palrt false ${CORECLR_PAL_ROOT}/lib/${CMAKE_BUILD_TYPE}/libpalrt.a)
+add_library_pal(coreclrpal true ${CORECLR_PAL_ROOT}/lib/${CMAKE_BUILD_TYPE}/libcoreclrpal.a)
+add_library_pal(palrt true ${CORECLR_PAL_ROOT}/lib/${CMAKE_BUILD_TYPE}/libpalrt.a)
 add_library_pal(corguids false ${CORECLR_PAL_ROOT}/lib/${CMAKE_BUILD_TYPE}/libcorguids.a)
 
 add_subdirectory(unix/src)
