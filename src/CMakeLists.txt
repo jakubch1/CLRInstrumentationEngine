@@ -1,8 +1,16 @@
-# Copyright (c) Microsoft Corporation. All rights reserved.
+
 # Licensed under the MIT License.
 
 # Require at least version 2.8.12 of CMake
 cmake_minimum_required(VERSION 2.8.12)
+
+set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
+set(CMAKE_C_COMPILER_ID_RUN TRUE)
+set(CMAKE_C_COMPILER_FORCED TRUE)
+set(CMAKE_C_COMPILER_WORKS TRUE)
+set(CMAKE_CXX_COMPILER_ID_RUN TRUE)
+set(CMAKE_CXX_COMPILER_FORCED TRUE)
+set(CMAKE_CXX_COMPILER_WORKS TRUE)
 
 IF(NOT EXISTS "${CMAKE_INSTALL_PREFIX}" OR NOT IS_DIRECTORY "${CMAKE_INSTALL_PREFIX}")
     message(FATAL_ERROR "Required property CMAKE_INSTALL_PREFIX not correctly defined.")
@@ -94,6 +102,7 @@ macro (build_init build_language build_type)
     include_directories(${CORECLR_PAL_ROOT}/inc/rt)
     include_directories(${GENERATED_INCLUDE_DIR})
     include_directories(${REPOSITORY_ROOT}/inc/clr/extra)
+    include_directories(/usr/local/opt/icu4c/include)
 
     add_definitions(-DCOM_NO_WINDOWS_H)
     add_definitions(-DUNICODE)
@@ -106,10 +115,13 @@ macro (build_init build_language build_type)
     add_definitions(-DPLATFORM_UNIX)
     add_definitions(-DXPLAT=1)
 
-    if (CMAKE_SYSTEM_NAME STREQUAL Linux)
+    if (CMAKE_SYSTEM_NAME STREQUAL Darwin)
+        add_definitions(-D__APPLE__)
+        add_definitions(-D_APPLE_)
         add_definitions(-D__LINUX__)
+add_definitions(-D_THREAD_SAFE)
         add_definitions(-D_LINUX_)
-    endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
+    endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
     add_definitions(-DBIT64)
 
@@ -149,6 +161,8 @@ macro (build_init build_language build_type)
     add_compile_options(-Wno-new-returns-null)
     add_compile_options(-Wno-deprecated-declarations)
     add_compile_options(-Wno-delete-incomplete)
+    add_compile_options(-Wno-pragma-pack)
+    add_compile_options(-Wno-memset-transposed-args)
 
     # Turn all enabled warnings into errors
     add_compile_options(-Werror)
@@ -224,7 +238,7 @@ endfunction()
 # Set the project name
 project(ClrInstrumentationEngine)
 
-if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
     set(CLR_CMAKE_PLATFORM_UNIX 1)
 
     # Detect Linux ID
@@ -239,7 +253,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
 
     set(PAL_SYMBOL_PREFIX clrie_)
     set(PAL_REDEFINES_HEADER ${GENERATED_INCLUDE_DIR}/pal_redefines.h)
-endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
+endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
 # Set flag to indicate if this will be a 64bit Linux build
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
@@ -252,14 +266,13 @@ set(CMAKE_MACOSX_RPATH true)
 
 # Don't allow shared libraries to be built with undefined symbols
 # Mac builds complain about these, Linux needs the switch
-if(CMAKE_SYSTEM_NAME STREQUAL Linux)
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-allow-shlib-undefined" )
-endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
+if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl" )
+endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
 
 if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-    message(FATAL_ERROR "Darwin build not supported.")
-    return()
+    set(PLAT_DLL_EXT "so")
 elseif(CMAKE_SYSTEM_NAME STREQUAL Linux)
     set(PLAT_DLL_EXT "so")
 else()
@@ -269,11 +282,11 @@ endif()
 
 # Add the PAL imported targets, redefining the necessary symbols on Linux
 # See Concord:/src/vsdbg/libvsbaseservices/PALRedefines.md for more info on this
-if (CMAKE_SYSTEM_NAME STREQUAL Linux)
+if (CMAKE_SYSTEM_NAME STREQUAL Darwin)   #TODO make linux or darwin
     if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL armv7l)
         find_program(OBJCOPY ${TOOLCHAIN}-objcopy)
     else()
-        find_program(OBJCOPY objcopy)
+        find_program(OBJCOPY llvm-objcopy)
     endif()
     if(OBJCOPY STREQUAL "OBJCOPY-NOTFOUND")
         message(FATAL_ERROR "objcopy not found")
@@ -315,7 +328,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL Linux)
             # Copy the PAL lib from it's original location and do the redefine
             add_custom_command(
                 OUTPUT ${redefine_lib_location}
-                COMMAND ${OBJCOPY} --redefine-syms ${REDEFINES_FILE} ${lib_location} ${redefine_lib_location}
+                COMMAND ${OBJCOPY} --output-target=mach-o-x86-64 --redefine-syms ${REDEFINES_FILE} ${lib_location} ${redefine_lib_location}
                 DEPENDS pal_redefines ${lib_location} ${REDEFINES_FILE}
                 COMMENT "Redefining exported PAL symbols in ${lib_location}"
             )
@@ -333,8 +346,8 @@ if (CMAKE_SYSTEM_NAME STREQUAL Linux)
 else()
     message(FATAL_ERROR "Linux is only supported platform.")
 endif()
-add_library_pal(coreclrpal true ${CORECLR_PAL_ROOT}/lib/${CMAKE_BUILD_TYPE}/libcoreclrpal.a)
-add_library_pal(palrt true ${CORECLR_PAL_ROOT}/lib/${CMAKE_BUILD_TYPE}/libpalrt.a)
+add_library_pal(coreclrpal false ${CORECLR_PAL_ROOT}/lib/${CMAKE_BUILD_TYPE}/libcoreclrpal.a)
+add_library_pal(palrt false ${CORECLR_PAL_ROOT}/lib/${CMAKE_BUILD_TYPE}/libpalrt.a)
 add_library_pal(corguids false ${CORECLR_PAL_ROOT}/lib/${CMAKE_BUILD_TYPE}/libcorguids.a)
 
 add_subdirectory(unix/src)

@@ -2620,14 +2620,14 @@ HRESULT CProfilerManager::ExceptionSearchCatcherFound(
 }
 
 HRESULT CProfilerManager::ExceptionOSHandlerEnter(
-    _In_ UINT_PTR __unused
+    _In_ UINT_PTR __unusedany
     )
 {
     HRESULT hr = S_OK;
 
     PROF_CALLBACK_BEGIN
 
-    IfFailRet(SendEventToRawProfilerCallback(&ICorProfilerCallback::ExceptionOSHandlerEnter, __unused));
+    IfFailRet(SendEventToRawProfilerCallback(&ICorProfilerCallback::ExceptionOSHandlerEnter, __unusedany));
 
     PROF_CALLBACK_END
 
@@ -2635,14 +2635,14 @@ HRESULT CProfilerManager::ExceptionOSHandlerEnter(
 }
 
 HRESULT CProfilerManager::ExceptionOSHandlerLeave(
-    _In_ UINT_PTR __unused
+    _In_ UINT_PTR __unusedany
     )
 {
     HRESULT hr = S_OK;
 
     PROF_CALLBACK_BEGIN
 
-    IfFailRet(SendEventToRawProfilerCallback(&ICorProfilerCallback::ExceptionOSHandlerLeave, __unused));
+    IfFailRet(SendEventToRawProfilerCallback(&ICorProfilerCallback::ExceptionOSHandlerLeave, __unusedany));
 
     PROF_CALLBACK_END
 

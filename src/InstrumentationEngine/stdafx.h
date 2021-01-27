@@ -10,7 +10,29 @@
 #include "CorHeaders.h"
 #include <palrt.h>
 #include <pal.h>
+
 #endif
+
+#include <unicode/uclean.h>
+#include <unicode/ucurr.h>
+#include <unicode/ucal.h>
+#include <unicode/uchar.h>
+#include <unicode/ucol.h>
+#include <unicode/udat.h>
+#include <unicode/udata.h>
+#include <unicode/udatpg.h>
+#include <unicode/uenum.h>
+#include <unicode/uidna.h>
+#include <unicode/uldnames.h>
+#include <unicode/ulocdata.h>
+#include <unicode/unorm2.h>
+#include <unicode/unum.h>
+#include <unicode/ures.h>
+#include <unicode/usearch.h>
+#include <unicode/utf16.h>
+#include <unicode/utypes.h>
+#include <unicode/urename.h>
+#include <unicode/ustring.h>
 
 #include "targetver.h"
 #ifndef PLATFORM_UNIX

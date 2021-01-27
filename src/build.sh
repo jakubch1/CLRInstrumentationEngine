@@ -177,6 +177,7 @@ invoke_build()
       "-DREPOSITORY_ROOT=$EnlistmentRoot" \
       "-DINTERMEDIATES_DIR=$__IntermediatesDir" \
       "-DENGINEBINARIES_DIR=$__ClrInstrumentationEngineBinDir" \
+      "-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON" \
       $cmake_extra_defines \
       "$EnlistmentRoot/src"
 
@@ -323,7 +324,7 @@ set_clang_path_and_version()
         # If the version is not specified, search for one
 
         local ClangVersion=""
-        for ver in "3.6" "3.9" "4.0"; do
+        for ver in "3.6" "3.9" "4.0" "12.0"; do
             hash "clang-$ver" 2>/dev/null
             if [ $? == 0 ]; then
                ClangVersion=$ver
@@ -337,7 +338,8 @@ set_clang_path_and_version()
                 print_install_instructions
                 exit 1
             fi
-            ClangVersion=$(clang --version | head -n 1 | grep -o -E "[[:digit:]].[[:digit:]].[[:digit:]]" | uniq)
+            ClangVersion=$(clang --version | head -n 1 | grep -o -E "[[:digit:]]+.[[:digit:]].[[:digit:]]" | uniq | head -1)
+            #ClangVersion=$(clang --version | head -n 1 | grep -o -E "[[:digit:]].[[:digit:]].[[:digit:]]" | uniq)
         fi
 
         local ClangVersionArray=(${ClangVersion//./ })
@@ -488,6 +490,10 @@ for i in "$@"
         ;;
         clang4.0)
         __ClangMajorVersion=4
+        __ClangMinorVersion=0
+        ;;
+        clang12.0)
+        __ClangMajorVersion=12
         __ClangMinorVersion=0
         ;;
         build-only|no-clr-restore)
