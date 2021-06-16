@@ -118,14 +118,10 @@ macro (build_init build_language build_type)
         # add_definitions(-D_DEBUG) TODO: Enable this
     endif ()
 
-    if(CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
-        message("Detected Linux x86_64")
-        add_definitions(-DLINUX64)
-        add_definitions(-D_M_AMD64)
-        add_definitions(-DTARGET_AMD64)
-    else (CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
-        message(FATAL_ERROR "error: Detected non x86_64 target processor. Not supported!")
-    endif(CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
+    message("Detected Linux x86_64")
+    add_definitions(-DLINUX64)
+    add_definitions(-D_M_AMD64)
+    add_definitions(-DTARGET_AMD64)
 
     # Ignored warnings
     # TODO: Reenable these
@@ -242,9 +238,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
 endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
 
 # Set flag to indicate if this will be a 64bit Linux build
-if(CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
-    set(IS_64BIT_BUILD 1)
-endif (CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
+set(IS_64BIT_BUILD 1)
 
 # Ensure that on MacOS, dylibs are referenced as '@rpath/example.dylib' instead of just 'example.dylib'. Otherwise they
 # will not be found unless the working directory == vsdbg directory.
@@ -343,4 +337,5 @@ add_subdirectory(Common.Lib)
 add_subdirectory(InstrumentationEngine.Api)
 add_subdirectory(InstrumentationEngine.Lib)
 add_subdirectory(InstrumentationEngine)
+add_subdirectory(LinuxProfiler)
 
